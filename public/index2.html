@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>skribblio 🐼</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  </head>
+  <body>
+    <!-- <button id="startButton">Start Game</button> -->
+    <div id="drawingCanvas">
+      <div id="timer">1:00</div>
+      <canvas></canvas> <!-- the actual drawing surface -->
+      <br>
+      <div class="palette"> <!-- the colors u can choose from! -->
+        <div class="paint" id="black"></div>
+        <div class="paint" id="red"></div>
+        <div class="paint" id="orange"></div>
+        <div class="paint" id="yellow"></div>
+        <div class="paint" id="green"></div>
+        <div class="paint" id="blue"></div>
+        <div class="paint" id="purple"></div>
+        <div class="paint" id="pink"></div>
+        <div class="paint" id="clear">
+          <div id="griddy">
+            <i class="far fa-trash-alt"></i>
+          </div>
+        </div>
+      </div>
+      <div class="brush-options">
+        <button id="brushSmall">Small</button>
+        <button id="brushMedium">Medium</button>
+        <button id="brushLarge">Large</button>
+      </div>
+    </div>
+    <div id="chat-container">
+      <div id="messages-container">
+        <ul id="messages"></ul>
+      </div>
+      <form id="form" action="">
+          <input id="input" autocomplete="off" placeholder="Type 'help' for commands" /><button>Submit</button>
+      </form>
+      <label for="chooseImageButton" class="custom-file-input-label">
+        Insert your meme!
+        <input type="file" id="chooseImageButton" accept="image/*" style="display: none;">
+      </label>
+       <!-- Add Choose Image button just under the text box -->
+      <button id="takePicButton">Take Picture</button> <!-- Add Take Picture button to the left side of the text box -->
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/script.js"></script>
+  </body>
+
+  <style>
+    .custom-file-input-label {
+      display: inline-block;
+      padding: 10px 15px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #fff;
+      background-color: #3498db;
+      border: 1px solid #2980b9;
+      cursor: pointer;
+      border-radius: 5px;
+      gap: 10px;
+    }
+    
+    #takePicButton {
+      display: inline-block;
+      padding: 10px 15px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #fff;
+      background-color: #3498db;
+      border: 1px solid #2980b9;
+      cursor: pointer;
+      border-radius: 5px;
+      gap: 10px;
+    }
+    
+    .custom-file-input-label:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</html>

@@ -1,0 +1,97 @@
+/* Instructions.html */
+body{
+    background-image: url("bg.png");
+    background-size: cover;
+    background-repeat: no-repeat;
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    overflow:auto;
+}
+
+.title {
+    margin:0;
+    font-family: 'Slackey', sans-serif;
+    font-size: 65px;
+    color: #fff;
+    -webkit-text-stroke: 2px #000;
+    text-shadow: 2px 2px 0 #000;
+    text-align: center;
+}
+
+
+.instr_box {
+    border-radius: 51px;
+    border: 1px solid #000;
+    background: #635a5a;
+    mix-blend-mode: multiply;
+    filter: blur(0.5x);
+    width: fit-content;
+}
+
+.instr_title {
+    font-family: 'Schoolbell', cursive; 
+    font-size: 40px;
+    color: #fff;
+    text-decoration: underline;
+    text-align: center;
+    margin-bottom: 0px;
+    margin-top: 15px;
+}
+
+.instructions {
+    font-family: 'Schoolbell', cursive;
+    font-size: 25px;
+    color: #fff;
+    margin-left: 30px;
+}
+
+.instr_points {
+    font-family: 'Schoolbell', cursive;
+    font-size: 28px;
+    color: #000000;
+    margin-left: 30px;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.instr_spec {
+    font-family: 'Schoolbell', cursive;
+    font-size: 25px;
+    color: #ffffff;
+    margin-left: 0px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.instr_content {
+    font-family: 'Schoolbell', cursive;
+    font-size: 25px;
+    color: #fff;
+    margin-left: 30px;
+    margin-bottom: 8px;
+    margin-top: 8px;;
+
+}
+p {
+    font-family: 'Schoolbell', cursive;
+    margin-left: 30px;
+    font-size: 18px;;
+}
+
+.Next {
+    font-family: 'Schoolbell', cursive;
+    font-size: 25px;
+    color: #fff;
+    margin-left: 30px;
+    margin-bottom: 8px;
+    margin-top: 8px;
+    text-decoration: underline;
+    background-color: black;
+    cursor: pointer;
+    border-radius: 8px;
+}

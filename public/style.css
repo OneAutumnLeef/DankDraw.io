@@ -1,0 +1,249 @@
+
+body {
+    height: 100vh; /* we want the body to fit the entire viewport!! */
+    width: 100vw;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+
+    font-family: 'Lato', sans-serif;
+    color: #66545e;
+
+    background-color: #FAF0ED; /* hehe don't mind this hehehehehehehehehehehehehehehhehehehehehehe */
+}
+
+#drawingCanvas {
+    margin-right: 20px;
+    margin-left: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+canvas {
+    border: 1px solid #66545e;
+    margin-left: 5px;
+
+    background-color: #FFFFFF;
+}
+
+li {
+    overflow-wrap: anywhere;
+}
+
+.paint {
+    height: 48px; /* need pretty square thumbnails for the color options! */
+    width: 48px;
+
+    display: inline-block; /* putting all the color options in a row */
+
+    border: 1px solid #66545e;
+
+    text-align: center; /* need this to keep the icon in the very center! */
+}
+
+/* setting us the colors for our paint options <3 */
+#black {
+    background-color: #000000;
+}
+
+#red {
+    background-color: #FAA0A0;
+}
+
+#orange {
+    background-color: #FFC69A;
+}
+
+#yellow {
+    background-color: #F8EC7C;
+}
+
+#green {
+    background-color: #D0F2C7;
+}
+
+#blue {
+    background-color: #BAEBE5;
+}
+
+#purple {
+    background-color: #E1CAF8;
+}
+
+#pink {
+    background-color: #F4C9DE;
+}
+
+#griddy {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* making a 3x3 grid so the icon can be centered!! */
+    grid-template-rows: repeat(3, 1fr);
+}
+
+#clear i {
+    grid-column: 2; /* placing the icon in the very center ! */
+    grid-row: 2;
+}
+
+.palette {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    margin-top: 10px;
+    justify-content: center;
+}
+
+#chat-container {
+    margin-left: 15px;
+    width: 22vw;
+    height: 90vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#messages-container {
+    flex-grow: 1;
+    max-height: calc(100% - 50px);
+    overflow-y: auto;
+    width: inherit;
+}
+
+#form {
+    background: #e3bab2;
+    padding: 0.5rem;
+    margin-right: 15px;
+    display: flex;
+    height: 50px;
+    width: inherit;
+
+    border-radius: 3px;
+}
+
+#input {
+    /* existing styles */
+    border: none;
+    padding: 0 1rem;
+    flex-grow: 1;
+    border-radius: 2rem;
+    margin: 0.25rem;
+    color: rgba(0, 0, 0, 0.5);
+
+    border-radius: 3px;
+}
+
+
+#input:focus {
+    color: #000;
+}
+
+#form > button {
+    background: #AD5B52;
+    border: none;
+    padding: 0 1rem;
+    margin: 0.25rem;
+    border-radius: 3px;
+    outline: none;
+    color: #fff;
+}
+
+#messages {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.bubble {
+    background-color: #E9D0CB;
+    border-radius: 0 10px 10px 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    max-width: 100%;
+    align-self: flex-start;
+    display: inline-block;
+    word-wrap: break-word;
+
+    overflow-x: hidden;
+}
+
+.bubble.sent {
+    align-self: flex-end;
+}
+
+.name-bubble {
+    font-size: 12px;
+    color: #888;
+    text-align: left;
+    margin-bottom: 3px;
+}
+
+.join-message {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.join-bubble {
+    font-size: 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    max-width: 100%;
+    align-self: flex-start;
+    display: inline-block;
+    word-wrap: break-word;
+}
+
+#timer {
+    font-size: 24px;
+    color: #66545e;
+    text-align: center;
+    margin-top: -30px;
+    margin-bottom: 20px;
+}
+
+/* Existing CSS code */
+
+#chooseImageButton {
+    display: inline-block; /* Ensure Choose Image button is displayed inline */
+    margin-top: 10px; /* Add margin for spacing */
+}
+
+#takePicButton {
+    display: inline-block; /* Ensure Take Picture button is displayed inline */
+    margin-right: 10px; /* Add margin for spacing */
+}
+
+#startButton {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    padding: 10px;
+    background-color: #AD5B52;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    outline: none;
+} 
+
+.brush-options {
+    display: flex;
+    gap: 10px;
+
+    margin-top: 30px;
+}
+
+.brush-options button {
+    padding: 5px 10px;
+    cursor: pointer;
+    background-color: #AD5B52;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    outline: none;
+}

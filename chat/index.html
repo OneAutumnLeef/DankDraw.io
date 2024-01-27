@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO chat</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Lato', sans-serif;
+        color: #66545e;
+      }
+
+      #chat-container {
+        /* background: #ece6e3;  */
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 350px;
+        height: 100%;
+        box-sizing: border-box;
+        backdrop-filter: blur(10px);
+        display: flex;
+        flex-direction: column;
+      }
+
+      #messages-container {
+        flex-grow: 1;
+        max-height: calc(100% - 50px);
+        overflow-y: auto;
+      }
+
+      #form {
+        background: #eee0ca;
+        padding: 0.25rem;
+        display: flex;
+        height: 50px;
+      }
+
+      #input {
+        border: none;
+        padding: 0 1rem;
+        flex-grow: 1;
+        border-radius: 2rem;
+        margin: 0.25rem;
+      }
+
+      #input:focus {
+        outline: none;
+      }
+
+      #form > button {
+        background: #333;
+        border: none;
+        padding: 0 1rem;
+        margin: 0.25rem;
+        border-radius: 3px;
+        outline: none;
+        color: #fff;
+      }
+
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .bubble {
+        background-color: #faebd7;
+        border-radius: 0 10px 10px 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+        max-width: 100%;
+        align-self: flex-start;
+        display: inline-block;
+        word-wrap: break-word
+      }
+
+      .bubble.sent {
+        align-self: flex-end;
+      }
+
+      .name-bubble {
+        font-size: 12px;
+        color: #888;
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chat-container">
+      <div id="messages-container">
+        <ul id="messages"></ul>
+      </div>
+      <form id="form" action="">
+        <input id="input" autocomplete="off" /><button>Submit</button>
+      </form>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+
+      // prompt for user's name
+      const name = prompt("Please enter your name:");
+
+      // emit the user's name to the server
+      socket.emit('sendName', name);
+
+      const form = document.getElementById('form');
+      const input = document.getElementById('input');
+      const messagesContainer = document.getElementById('messages-container');
+      const messages = document.getElementById('messages');
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (input.value) {
+          socket.emit('chat message', { name, message: input.value });
+          input.value = '';
+        }
+      });
+
+      socket.on('chat message', (data) => {
+        const item = document.createElement('li');
+        const bubbleClass = data.name === name ? 'bubble sent' : 'bubble';
+        item.innerHTML = `
+          <div class="name-bubble">${data.name}</div>
+          <div class="${bubbleClass}">${data.message}</div>
+        `;
+        messages.appendChild(item);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      });
+    </script>
+  </body>
+</html>
