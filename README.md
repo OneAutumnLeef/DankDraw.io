@@ -6,7 +6,7 @@ Welcome to `DankDraw.io 🎭`, a digital rendition of the classic game of pictio
 This game was created with HTML/CSS/JavaScript, with the help of runtime environments/frameworks/etc. such as [Node.js](https://nodejs.org/en), [Express.js](https://expressjs.com/), and [Socket.IO](https://socket.io/) for our backend
 
 ⬇️ opening still of `DankDraw.io`
-![](./visuals/opening.png)
+![](1.png)
 
 ## 💡 INSTRUCTIONS 
 ⬇️ `help` command of `skribbl.io`
