@@ -26,7 +26,7 @@ This game was created with HTML/CSS/JavaScript, with the help of runtime environ
 * The chat announces when a user connects/disconnects
  
 ##  📦 INSTALLING AND RUNNING 
-1. From [OneAutumnLeef/Draworgetdrawn](https://github.com/OneAutumnLeef/Draworgetdrawn), download the following files:
+1. From [OneAutumnLeef/Draworgetdrawn](https://github.com/OneAutumnLeef/Draworgetdrawn), Download the following files:
     * app.js (the server-facing js code)
     * index.html
     * the public folder, which includes:
