@@ -1,11 +1,11 @@
 ## 👩🏻‍💻 DESCRIPTION
-Welcome to `skribbl.io 🎨`, a digital rendition of the classic game of pictionary, where players utilize a chatroom to guess answers and control gameplay. This project was heavily inspired by the popular online game, [**skribbl.io**](https://skribbl.io/).
+Welcome to `DankDraw.io 🎭`, a digital rendition of the classic game of pictionary, where players utilize a chatroom to guess answers and control gameplay. This project was heavily inspired by the popular online game, [**skribbl.io**](https://skribbl.io/).
 
-`skribbl.io` was made by [@00eemsy](https://github.com/00eemsy) (emily) and [@ycheuk](https://github.com/ycheuk) (yikyin) as part of our 2024 reed hackathon. This hackathon acted as an introduction to HTML, CSS, JavaScript, web development, client-server interactions, etc., and `skribbl.io` was the capstone of our week-long learning experience!
+`DankDraw.io` was made by [@OneAutumnLeef](https://github.com/OneAutumnLeef) (Deraj) and [@Sharankarthick](https://github.com/Sharankarthick) (Sharan Karthick) as part of our 2024 Global Game Jam. This whimsical platform merges memes, madness, and web development prowess into a sensational experience.
 
 This game was created with HTML/CSS/JavaScript, with the help of runtime environments/frameworks/etc. such as [Node.js](https://nodejs.org/en), [Express.js](https://expressjs.com/), and [Socket.IO](https://socket.io/) for our backend
 
-⬇️ opening still of `skribbl.io`
+⬇️ opening still of `DankDraw.io`
 ![](./visuals/opening.png)
 
 ## 💡 INSTRUCTIONS 
@@ -40,22 +40,15 @@ node app.js
 4. Open the following link on your preferred browser: [https://localhost:3000](https://localhost:3000)
 
 ## 🎮 DEMOS 
-_using the chat_
+_intro_
 ![](./visuals/chat.gif)
 
-_a round of gameplay_
+_instructions_
 ![](./visuals/round.gif)
 
-running out of time
+gamepage
 ![](./visuals/oops.gif)
 
 `score` feature
 ![](./visuals/score.gif)
   
-
-  <!-- git init
-  git status
-  git add .
-  git commit
-  git remote add origin https://github.com/OneAutumnLeef/Draworgetdrawn.git
-  git push -u -f origin master -->
