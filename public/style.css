@@ -247,3 +247,16 @@ li {
     border-radius: 3px;
     outline: none;
 }
+
+.Surprise button{
+    padding: 5px 10px;
+    cursor: pointer;
+    background-color: #AD5B52;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    outline: none;
+    gap: 10px;
+
+    margin-top: 15px;
+}

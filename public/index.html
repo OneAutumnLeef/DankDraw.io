@@ -17,8 +17,10 @@
 
 <body> 
     <h1 class="animate__animated animate_heartbeat title">DankDraw.io</h1>
-
+<div class = "tbj">
     <button id="playButton" onclick="redirectToPage()" class="Play">Play!</button>
+    <button id="playButton" onclick="redirectToPage2()" class="Sponsor">Sponsors!</button>
+</div>
 </body>
 
 <script>
@@ -31,7 +33,12 @@
             redirectToPage();
         });
 
+
         function redirectToPage() {
           window.location.href = 'instructions.html';
+        }
+
+        function redirectToPage2() {
+          window.location.href = 'sponsors.html';
         }
       </script>

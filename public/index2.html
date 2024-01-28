@@ -36,6 +36,11 @@
         <button id="brushMedium">Medium</button>
         <button id="brushLarge">Large</button>
       </div>
+      <div class="Surprise">
+        <button id="Surprise1">Surprise Me!</button>
+        <button id="Surprise2">Surprise Me!</button>
+        <button id="Surprise3">Surprise Me!</button>
+      </div>
     </div>
     <div id="chat-container">
       <div id="messages-container">
@@ -53,6 +58,7 @@
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
   </body>
 
   <style>
@@ -86,4 +92,31 @@
       background-color: #2980b9;
     }
   </style>
+
+<script>
+  const clickSound = new Howl({
+        src: ['audio/omgwow.mp3'], // Adjust the path to your click sound file
+    });
+
+    const clickSound2 = new Howl({
+        src: ['audio/nani.mp3'], // Adjust the path to your click sound file
+    });
+
+    const clickSound3 = new Howl({
+        src: ['audio/ohmagad.mp3'], // Adjust the path to your click sound file
+    });
+    
+    document.getElementById('Surprise1').addEventListener('click', () => {
+        clickSound.play(); // Play the click sound when the button is clicked
+    });
+
+    document.getElementById('Surprise2').addEventListener('click', () => {
+        clickSound2.play(); // Play the click sound when the button is clicked
+    });
+
+    document.getElementById('Surprise3').addEventListener('click', () => {
+        clickSound3.play(); // Play the click sound when the button is clicked
+    });
+  </script>
+
 </html>

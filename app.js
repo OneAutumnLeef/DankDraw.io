@@ -8,8 +8,7 @@ const server = createServer(app);
 const io = new Server(server);
 
 // array of words
-const wordList = ['Troll Face', 'Peppa Pig', 'orange', 'grape', 'strawberry', 'watermelon', 'soda',
-'happy', 'snow', 'computer', 'tree', 'treehouse', 'clock', 'soup', 'bed'];
+const wordList = ['Troll Face', 'Peppa Pig', 'peppa pig','batman','gummy bear','banana','lipstick','avocado','panda','sus','zigga'];
 const joinedPlayers = [];
 let playerScores = {};
 
