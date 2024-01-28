@@ -1,7 +1,7 @@
 ## 👩🏻‍💻 DESCRIPTION
 Welcome to DankDraw.io 🎭, a digital rendition of the classic game of pictionary, where players utilize a chatroom to guess answers and control gameplay. This project was heavily inspired by the popular online game, [*skribbl.io*](https://skribbl.io/).
 
-DankDraw.io was made by [@OneAutumnLeef](https://github.com/OneAutumnLeef) (Deraj) and [@Sharankarthick](https://github.com/Sharankarthick) (Sharan Karthick) and [@SHAN2004-IIIT] (https://github.com/SHAN2004-IIIT) (Shanmathe SA) as part of our 2024 Global Game Jam. This whimsical platform merges memes, madness, and web development prowess into a sensational experience.
+DankDraw.io was made by [@OneAutumnLeef](https://github.com/OneAutumnLeef) (Deraj), [@Sharankarthick](https://github.com/Sharankarthick) (Sharan Karthick), [@SHAN2004-IIIT](https://github.com/SHAN2004-IIIT) (Shanmathe SA), [@MaithreyanM05](https://github.com/MaithreyanM05) (Maithreyan M) and [@YashwanthS-7](https://github.com/YashwanthS-7) (Yashwanth S)as part of our 2024 Global Game Jam. This whimsical platform merges memes, madness, and web development prowess into a sensational experience.
 
 This game was created with HTML/CSS/JavaScript, with the help of runtime environments/frameworks/etc. such as [Node.js](https://nodejs.org/en), [Express.js](https://expressjs.com/), and [Socket.IO](https://socket.io/) for our backend
 
