@@ -8,7 +8,7 @@ const server = createServer(app);
 const io = new Server(server);
 
 // array of words
-const wordList = ['apple', 'banana', 'orange', 'grape', 'strawberry', 'watermelon', 'soda',
+const wordList = ['Troll Face', 'Peppa Pig', 'orange', 'grape', 'strawberry', 'watermelon', 'soda',
 'happy', 'snow', 'computer', 'tree', 'treehouse', 'clock', 'soup', 'bed'];
 const joinedPlayers = [];
 let playerScores = {};
@@ -35,7 +35,7 @@ function startTimer() {
             io.emit('updateTimer', timerDuration);
         } else {
             clearInterval(timerInterval);
-            io.emit('chat message', { name: 'Skribblio', message: 'Oops! No one got it!', isJoinMessage: true });
+            io.emit('chat message', { name: 'DankDraw.io', message: 'Oops! No one got it!', isJoinMessage: true });
             resetGame();
         }
     }, 1000);
@@ -66,7 +66,7 @@ io.on('connection', (socket) => {
 
     // emit a message when a new user joins
     socket.on('userJoined', (name) => {
-        io.emit('chat message', { name: 'Skribblio', message: `${name} has joined!`, isJoinMessage: true });
+        io.emit('chat message', { name: 'DankDraw.io', message: `${name} has joined!`, isJoinMessage: true });
     });
 
     socket.on('checkIfCanDraw', (data) => {
@@ -91,9 +91,9 @@ io.on('connection', (socket) => {
 
         io.sockets.sockets.forEach((socket) => {
             if (socket.username === chosenPlayer) {
-                io.to(socket.id).emit('chat message', {name: "Skribblio", message: `your word is: ${wordChosen}`, isJoinMessage: true});
+                io.to(socket.id).emit('chat message', {name: "DankDraw.io", message: `your word is: ${wordChosen}`, isJoinMessage: true});
             } else {
-                io.to(socket.id).emit('chat message', {name: "Skribblio", message: `${chosenPlayer} is drawing!`, isJoinMessage: true});
+                io.to(socket.id).emit('chat message', {name: "DankDraw.io", message: `${chosenPlayer} is drawing!`, isJoinMessage: true});
             }
         });
 
@@ -110,7 +110,7 @@ io.on('connection', (socket) => {
 
         playerScores[temp_user] ++;
 
-        io.emit('chat message', {name: "Skribblio", message: `the correct word was ${wordChosen}. ${temp_user} guessed it first, giving them a total of ${playerScores[temp_user]} points!`, isJoinMessage: true});
+        io.emit('chat message', {name: "DankDraw.io", message: `the correct word was ${wordChosen}. ${temp_user} guessed it first, giving them a total of ${playerScores[temp_user]} points!`, isJoinMessage: true});
 
         // Stop the timer when the correct word is guessed
         stopTimer();
@@ -122,12 +122,12 @@ io.on('connection', (socket) => {
             .map(([user, score]) => `<strong>${user}</strong>: ${score} points`)
             .join('<br>');
 
-        socket.emit('chat message', { name: 'Skribblio', message: scoreMessage, isJoinMessage: true });
+        socket.emit('chat message', { name: 'DankDraw.io', message: scoreMessage, isJoinMessage: true });
     }
 
     if (data.message.toLowerCase() === 'help') {
         let commands = "here's a list of commands: <br><br><strong>start</strong> - start a new round of gameplay<br><strong>score</strong> - see each player's current score";
-        socket.emit('chat message', {name: 'Skribblio', message: commands, isJoinMessage: true})
+        socket.emit('chat message', {name: 'DankDraw.io', message: commands, isJoinMessage: true})
     }
 
 });
@@ -140,7 +140,7 @@ io.on('connection', (socket) => {
         if (index !== -1) {
             joinedPlayers.splice(index, 1); // remove player from the joinedPlayers list
             io.emit('joinedPlayers', joinedPlayers); // emit updated list to all users
-            io.emit('chat message', { name: 'Skribblio', message: `${socket.username} has left :(`, isJoinMessage: true });
+            io.emit('chat message', { name: 'DankDraw.io', message: `${socket.username} has left :(`, isJoinMessage: true });
         }
 
         let temp_user = socket.username;

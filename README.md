@@ -52,3 +52,10 @@ running out of time
 `score` feature
 ![](./visuals/score.gif)
   
+
+  <!-- git init
+  git status
+  git add .
+  git commit
+  git remote add origin https://github.com/OneAutumnLeef/Draworgetdrawn.git
+  git push -u -f origin master -->

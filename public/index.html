@@ -4,19 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel='stylesheet' type='text/css' media='screen' href='style1.css'>
+    <link rel="icon" href="favicon.png" type="image/x-icon"> <!-- Replace "favicon.ico" with the path to your favicon file -->
+    <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Slackey&display=swap" rel="stylesheet">
-    <title>Game - CGVHB</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Slackey&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <title>DankDraw.io</title>
 </head>
 
-<body> 
-    <h1 class = "title">Draworgetdrawed</h1>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
 
-    <button onclick="redirectToPage()" class="Play">Play!</button>
-    <script>
+<body> 
+    <h1 class="animate__animated animate_heartbeat title">DankDraw.io</h1>
+
+    <button id="playButton" onclick="redirectToPage()" class="Play">Play!</button>
+</body>
+
+<script>
+      const clickSound = new Howl({
+            src: ['audio/click.mp3'], // Adjust the path to your click sound file
+        });
+        
+        document.getElementById('playButton').addEventListener('click', () => {
+            clickSound.play(); // Play the click sound when the button is clicked
+            redirectToPage();
+        });
+
         function redirectToPage() {
           window.location.href = 'instructions.html';
         }
       </script>
-</body>

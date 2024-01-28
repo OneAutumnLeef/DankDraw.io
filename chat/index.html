@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Socket.IO chat</title>
+    <title>DankDraw.io chat</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:400,700">
     <style>
       body {
@@ -94,15 +94,15 @@
         <ul id="messages"></ul>
       </div>
       <form id="form" action="">
-        <input id="input" autocomplete="off" /><button>Submit</button>
+        <input id="input" autocomplete="off" /><button>Send</button>
       </form>
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      const socket = io();
+      const socket = io();  
 
       // prompt for user's name
-      const name = prompt("Please enter your name:");
+      const name = prompt("Please enter your username:");
 
       // emit the user's name to the server
       socket.emit('sendName', name);

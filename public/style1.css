@@ -15,7 +15,7 @@ body{
 .title {
     margin:0;
     font-family: 'Slackey', sans-serif;
-    font-size: 125px;
+    font-size: 150px;
     color: #fff;
     -webkit-text-stroke: 2px #000;
     text-shadow: 2px 2px 0 #000;
@@ -37,6 +37,13 @@ body{
     background-color: #fff;
     color: black;
     cursor: pointer;
+    transform: scale(1.1); /* You can adjust the scale factor as needed */
+    transition: transform 0.3s ease; /* Add a smooth transition effect */
+
 }
 
-
+.title:hover {
+    transform: scale(1.1); /* You can adjust the scale factor as needed */
+    transition: transform 0.3s ease; /* Add a smooth transition effect */
+    cursor: pointer;
+}

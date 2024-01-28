@@ -1,6 +1,9 @@
 {
   "dependencies": {
+    "animate.css": "^4.1.1",
     "express": "^4.18.2",
+    "howl": "^0.2.0",
+    "howler": "^2.2.4",
     "socket.io": "^4.7.3"
   }
 }
