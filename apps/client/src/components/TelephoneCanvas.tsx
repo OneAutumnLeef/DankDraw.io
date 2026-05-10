@@ -138,7 +138,7 @@ export function TelephoneCanvas({ onChange, disabled }: Props) {
           className="rounded-xl bg-white shadow-soft touch-none cursor-crosshair"
         />
       </div>
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-ink-800/80 p-2">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-ink-800 p-2">
         <button
           onClick={() => setTool('pen')}
           className={`h-9 w-9 rounded-xl border ${tool === 'pen' ? 'border-dank-pink bg-dank-pink/15' : 'border-white/10 bg-white/5'}`}

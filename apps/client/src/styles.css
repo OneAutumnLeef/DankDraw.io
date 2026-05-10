@@ -50,8 +50,11 @@
   .glass {
     @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-soft;
   }
+  /* Solid bg on purpose — the animated background blobs in <Background>
+     used to bleed through translucent panels and read as "panel overlap"
+     to users. Keep the soft shadow for depth, drop the see-through. */
   .panel {
-    @apply rounded-3xl border border-white/10 bg-ink-800/80 backdrop-blur-xl shadow-soft;
+    @apply rounded-3xl border border-white/10 bg-ink-800 shadow-soft;
   }
   .btn {
     @apply inline-flex select-none items-center justify-center gap-2 rounded-2xl px-5 py-3 font-semibold tracking-wide transition active:translate-y-px;

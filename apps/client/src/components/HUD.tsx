@@ -12,7 +12,7 @@ export function HUD() {
   const remaining = useCountdown(state.phaseEndsAt);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-3xl border border-white/10 bg-ink-800/80 p-2 px-3 shadow-soft backdrop-blur-xl sm:p-3 sm:px-4">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-3xl border border-white/10 bg-ink-800 p-2 px-3 shadow-soft sm:p-3 sm:px-4">
       <div className="flex items-center gap-2 text-xs text-white/60">
         <span className="chip border-dank-pink/30 bg-dank-pink/10 text-dank-pink">
           Round {state.round}/{state.totalRounds}

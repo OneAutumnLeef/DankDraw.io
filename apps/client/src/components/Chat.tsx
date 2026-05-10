@@ -146,7 +146,7 @@ export function Chat() {
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="flex gap-2 border-t border-white/10 bg-ink-900/60 p-3">
+      <form onSubmit={onSubmit} className="flex gap-2 border-t border-white/10 bg-ink-900 p-3">
         <button
           type="button"
           title="attach image"

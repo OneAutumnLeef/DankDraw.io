@@ -229,7 +229,7 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
 
       {/* Toolbar */}
       {isDrawer && (
-        <div className="flex flex-wrap items-center justify-center gap-2 rounded-3xl border border-white/10 bg-ink-800/80 p-2 shadow-soft backdrop-blur-xl sm:gap-3 sm:p-3">
+        <div className="flex flex-wrap items-center justify-center gap-2 rounded-3xl border border-white/10 bg-ink-800 p-2 shadow-soft sm:gap-3 sm:p-3">
           {/* Tools */}
           <div className="flex gap-1">
             {TOOLS.map((t) => (

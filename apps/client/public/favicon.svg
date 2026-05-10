@@ -1,22 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="dGrad" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="chrome" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#FF6BD6"/>
-      <stop offset="100%" stop-color="#C8B0FF"/>
+      <stop offset="50%" stop-color="#FFE066"/>
+      <stop offset="100%" stop-color="#7CC4FF"/>
     </linearGradient>
+    <filter id="pinkGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dy="1.5" result="off"/>
+      <feFlood flood-color="#FF6BD6" flood-opacity="0.5"/>
+      <feComposite in2="off" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
   <rect width="64" height="64" rx="14" fill="#0E0B1F"/>
 
-  <g transform="rotate(-3 32 32)">
+  <g filter="url(#pinkGlow)">
     <path
-      d="M 17 13 Q 14 13 14 17 L 14 47 Q 14 51 17 51 L 32 51 Q 51 51 51 32 Q 51 13 32 13 Z M 24 23 L 24 41 L 32 41 Q 41 41 41 32 Q 41 23 32 23 Z"
-      fill="url(#dGrad)"
+      d="M 16 12 L 16 52 L 34 52 Q 54 52 54 32 Q 54 12 34 12 Z M 26 22 L 26 42 L 34 42 Q 44 42 44 32 Q 44 22 34 22 Z"
+      fill="url(#chrome)"
       fill-rule="evenodd"
+      stroke="rgba(0,0,0,0.45)"
+      stroke-width="2.5"
+      stroke-linejoin="round"
     />
   </g>
-
-  <ellipse cx="19" cy="20" rx="2.5" ry="3" fill="#A8FFE4" opacity="0.85"/>
-
-  <circle cx="55" cy="51" r="3.5" fill="#FFE066"/>
 </svg>
