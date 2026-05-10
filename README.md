@@ -62,6 +62,39 @@ pnpm typecheck
 pnpm format
 ```
 
+## ☁️ Deploy
+
+> **Heads-up:** Vercel and other "serverless-only" hosts do **not** work for
+> DankDraw — the Socket.IO server holds room state in memory and needs a real,
+> long-lived Node process with persistent WebSockets. Pick a host that runs a
+> real container (Fly, Render, Railway, your own VPS).
+
+### Fly.io (recommended)
+
+A `Dockerfile` + `fly.toml` are checked in. First time:
+```bash
+fly launch --copy-config --no-deploy   # pick an app name + region
+fly deploy
+```
+Subsequent deploys are just `fly deploy`. The default config:
+- Sleeps the machine to zero when idle (free-tier friendly)
+- Health-checks `/api/health` every 30 s
+- Caps each machine at ~250 concurrent connections so Socket.IO sticky-session
+  problems never come up — one room = one machine
+
+To scale up later: `fly scale memory 512` / `fly scale count 2 --max-per-region 2`
+(beyond one machine you'd want to add the Socket.IO Redis adapter).
+
+### Plain Docker
+```bash
+docker build -t dankdraw .
+docker run -p 3000:3000 dankdraw
+```
+
+### Render / Railway / VPS
+Anything that runs the Dockerfile works. Expose port 3000, point traffic at it,
+make sure the proxy forwards WebSocket upgrades.
+
 ## 🎮 How to play
 
 1. Pick a name + avatar + color on the landing page.

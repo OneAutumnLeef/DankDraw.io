@@ -1,0 +1,48 @@
+# Fly.io config for DankDraw.io
+# Quickstart:
+#   fly launch --copy-config --no-deploy   # picks an app name + region
+#   fly deploy
+#
+# WebSocket-friendly settings:
+#  - auto_stop / auto_start let the machine sleep to zero when idle
+#  - min_machines_running = 0 keeps free-tier costs down
+#  - hard_limit = 250 keeps a single machine handling all clients in a room,
+#    avoiding cross-machine Socket.IO sticky-session headaches.
+
+app = "dankdraw"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  HOST = "0.0.0.0"
+  LOG_LEVEL = "info"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 200
+    hard_limit = 250
+
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "10s"
+  method = "GET"
+  path = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

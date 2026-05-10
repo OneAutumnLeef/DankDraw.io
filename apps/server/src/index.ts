@@ -21,7 +21,8 @@ const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? '0.0.0.0';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const clientDist = join(__dirname, '..', '..', 'client', 'dist');
+const clientDist =
+  process.env.CLIENT_DIST ?? join(__dirname, '..', '..', 'client', 'dist');
 
 async function main() {
   const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? 'info' } });

@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/.cache
+**/.vite
+**/.turbo
+**/coverage
+.git
+.gitignore
+.github
+.vscode
+.idea
+.DS_Store
+*.log
+legacy
+README.md
+.prettierrc.json
