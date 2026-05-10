@@ -28,13 +28,26 @@ export function SettingsMenu() {
     setSfxVolume(settings.volume);
   }, [settings.soundOn, settings.volume]);
 
+  // Close on outside click + ESC. The popover is fixed-position so we can't
+  // rely on a wrapping ref — track the popover's own ref separately.
+  const popoverRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if (!open) return;
     const onClick = (e: MouseEvent) => {
-      if (!ref.current) return;
-      if (!ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (ref.current?.contains(t)) return; // click on the trigger button
+      if (popoverRef.current?.contains(t)) return; // click inside the popover
+      setOpen(false);
     };
-    if (open) document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open]);
 
   return (
@@ -43,17 +56,30 @@ export function SettingsMenu() {
         onClick={() => setOpen((o) => !o)}
         className="btn-ghost h-9 px-3 text-sm"
         aria-label="settings"
+        aria-expanded={open}
       >
         ⚙ Settings
       </button>
       <AnimatePresence>
         {open && (
+          <>
+            {/* Tap-anywhere backdrop. Click-outside still works thanks to the
+                document listener above; this layer also dims the page so the
+                popover doesn't visually fight the chat panel beside it. */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="z-popover fixed inset-0 bg-black/40 backdrop-blur-[1px]"
+              onClick={() => setOpen(false)}
+            />
           <motion.div
+            ref={popoverRef}
             initial={{ opacity: 0, y: -6, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 500, damping: 36 }}
-            className="panel z-popover absolute right-0 top-12 w-[min(20rem,calc(100vw-1.5rem))] p-4"
+            className="z-popover fixed right-3 top-14 w-[min(20rem,calc(100vw-1.5rem))] rounded-3xl border border-white/15 bg-ink-900 p-4 shadow-glow"
           >
             <div className="text-xs font-bold uppercase tracking-wider text-white/60">Theme</div>
             <div className="mt-2 grid grid-cols-3 gap-2">
@@ -110,6 +136,7 @@ export function SettingsMenu() {
               keyboard: B / M / E / F · [ ] size · Ctrl+Z undo
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
