@@ -1,9 +1,22 @@
 {
-  "dependencies": {
-    "animate.css": "^4.1.1",
-    "express": "^4.18.2",
-    "howl": "^0.2.0",
-    "howler": "^2.2.4",
-    "socket.io": "^4.7.3"
+  "name": "dankdraw",
+  "version": "2.0.0",
+  "private": true,
+  "description": "DankDraw.io — multiplayer pictionary with extra dank.",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" run dev",
+    "build": "pnpm -r run build",
+    "start": "pnpm --filter @dankdraw/server start",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,css}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
   }
 }
