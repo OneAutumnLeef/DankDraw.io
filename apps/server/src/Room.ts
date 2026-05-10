@@ -209,9 +209,13 @@ export class Room {
   }
 
   setTeam(byId: string, targetId: string, team: Team) {
-    if (byId !== this.hostId || this.phase !== 'lobby') return;
+    // Only meaningful in the lobby for teams mode.
+    if (this.phase !== 'lobby' || this.config.mode !== 'teams') return;
+    // A player can pick their own team; the host can pick for anyone.
+    if (byId !== this.hostId && byId !== targetId) return;
     const p = this.players.get(targetId);
     if (!p) return;
+    if (p.team === team) return;
     p.team = team;
     this.broadcastState();
   }
@@ -255,7 +259,19 @@ export class Room {
 
   updateConfig(playerId: string, partial: Partial<RoomConfig>) {
     if (playerId !== this.hostId || this.phase !== 'lobby') return;
+    const wasTeams = this.config.mode === 'teams';
     this.config = { ...this.config, ...partial };
+    const nowTeams = this.config.mode === 'teams';
+    if (!wasTeams && nowTeams) {
+      // Switched into Teams mode — give everyone an initial side so the
+      // lobby doesn't look empty. Players can re-pick freely.
+      for (const p of this.players.values()) {
+        if (!p.team) p.team = this.balanceTeam();
+      }
+    } else if (wasTeams && !nowTeams) {
+      // Switched out — drop team assignments.
+      for (const p of this.players.values()) p.team = null;
+    }
     this.broadcastState();
   }
 

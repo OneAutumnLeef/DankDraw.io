@@ -224,23 +224,54 @@ function Slider({
 
 function TeamsPanel({ isHost }: { isHost: boolean }) {
   const players = useGame((s) => s.state?.players ?? []);
+  const selfId = useGame((s) => s.selfId);
   const red = players.filter((p) => p.team === 'red');
   const blue = players.filter((p) => p.team === 'blue');
   const unassigned = players.filter((p) => !p.team);
 
-  const moveTo = (playerId: string, team: 'red' | 'blue') => {
-    if (!isHost) return;
+  const setTeam = (playerId: string, team: 'red' | 'blue') => {
+    // Server allows self-pick or host-picks-anyone. Match the client UI.
+    const isSelf = playerId === selfId;
+    if (!isSelf && !isHost) return;
     getSocket().emit('room:setTeam', { playerId, team });
   };
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <TeamColumn label="🔴 Red" players={red} onSwap={(id) => moveTo(id, 'blue')} isHost={isHost} accent="dank-coral" />
-      <TeamColumn label="🔵 Blue" players={blue} onSwap={(id) => moveTo(id, 'red')} isHost={isHost} accent="dank-sky" />
+    <div className="flex flex-col gap-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <TeamColumn
+          label="🔴 Red"
+          team="red"
+          players={red}
+          selfId={selfId}
+          isHost={isHost}
+          onSetTeam={setTeam}
+        />
+        <TeamColumn
+          label="🔵 Blue"
+          team="blue"
+          players={blue}
+          selfId={selfId}
+          isHost={isHost}
+          onSetTeam={setTeam}
+        />
+      </div>
       {unassigned.length > 0 && (
-        <div className="sm:col-span-2 rounded-2xl border border-dashed border-white/15 bg-white/5 p-3 text-xs text-white/60">
-          {unassigned.length} player{unassigned.length === 1 ? '' : 's'} unassigned —
-          they'll be auto-balanced when the host starts the game.
+        <div className="panel border-dashed p-3">
+          <div className="mb-2 text-xs font-bold uppercase tracking-wider text-white/60">
+            Pick a side
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {unassigned.map((p) => (
+              <PlayerRow
+                key={p.id}
+                player={p}
+                currentTeam={null}
+                canChange={p.id === selfId || isHost}
+                onSetTeam={(t) => setTeam(p.id, t)}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -249,50 +280,105 @@ function TeamsPanel({ isHost }: { isHost: boolean }) {
 
 function TeamColumn({
   label,
+  team,
   players,
-  onSwap,
+  selfId,
   isHost,
-  accent,
+  onSetTeam,
 }: {
   label: string;
-  players: { id: string; name: string; avatar: string; color: string }[];
-  onSwap: (id: string) => void;
+  team: 'red' | 'blue';
+  players: { id: string; name: string; avatar: string; color: string; team: 'red' | 'blue' | null }[];
+  selfId: string | null;
   isHost: boolean;
-  accent: string;
+  onSetTeam: (playerId: string, team: 'red' | 'blue') => void;
 }) {
-  const ringColor = accent === 'dank-coral' ? 'border-dank-coral/40' : 'border-dank-sky/40';
-  const bgColor = accent === 'dank-coral' ? 'bg-dank-coral/5' : 'bg-dank-sky/5';
+  const isRed = team === 'red';
+  const ringColor = isRed ? 'border-dank-coral/40' : 'border-dank-sky/40';
+  const bgColor = isRed ? 'bg-dank-coral/5' : 'bg-dank-sky/5';
+  const selfHere = players.some((p) => p.id === selfId);
+
   return (
     <div className={`panel ${ringColor} ${bgColor} p-3`}>
-      <div className="mb-2 font-display text-lg">{label}</div>
-      <div className="space-y-1.5">
-        {players.length === 0 && (
-          <div className="text-xs italic text-white/40">empty</div>
-        )}
-        {players.map((p) => (
-          <div
-            key={p.id}
-            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-1.5"
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="font-display text-lg">{label}</div>
+        {!selfHere && selfId && (
+          <button
+            onClick={() => onSetTeam(selfId, team)}
+            className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition ${
+              isRed
+                ? 'border-dank-coral/60 bg-dank-coral/10 text-dank-coral hover:bg-dank-coral/20'
+                : 'border-dank-sky/60 bg-dank-sky/10 text-dank-sky hover:bg-dank-sky/20'
+            }`}
           >
-            <div
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-base"
-              style={{ backgroundColor: p.color + '40', boxShadow: `inset 0 0 0 2px ${p.color}` }}
-            >
-              {p.avatar}
-            </div>
-            <div className="flex-1 truncate text-sm">{p.name}</div>
-            {isHost && (
-              <button
-                onClick={() => onSwap(p.id)}
-                className="text-xs text-white/50 hover:text-white"
-                title="swap team"
-              >
-                ⇄
-              </button>
-            )}
-          </div>
+            join {isRed ? '🔴' : '🔵'}
+          </button>
+        )}
+      </div>
+      <div className="space-y-1.5">
+        {players.length === 0 && <div className="text-xs italic text-white/40">empty</div>}
+        {players.map((p) => (
+          <PlayerRow
+            key={p.id}
+            player={p}
+            currentTeam={p.team}
+            canChange={p.id === selfId || isHost}
+            onSetTeam={(t) => onSetTeam(p.id, t)}
+          />
         ))}
       </div>
+    </div>
+  );
+}
+
+function PlayerRow({
+  player,
+  currentTeam,
+  canChange,
+  onSetTeam,
+}: {
+  player: { id: string; name: string; avatar: string; color: string };
+  currentTeam: 'red' | 'blue' | null;
+  canChange: boolean;
+  onSetTeam: (team: 'red' | 'blue') => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-1.5">
+      <div
+        className="flex h-7 w-7 items-center justify-center rounded-lg text-base"
+        style={{ backgroundColor: player.color + '40', boxShadow: `inset 0 0 0 2px ${player.color}` }}
+      >
+        {player.avatar}
+      </div>
+      <div className="flex-1 truncate text-sm">{player.name}</div>
+      {canChange && (
+        <div className="flex gap-1">
+          <button
+            onClick={() => onSetTeam('red')}
+            disabled={currentTeam === 'red'}
+            title="move to red"
+            className={`h-7 rounded-full border px-2 text-[11px] font-semibold transition disabled:opacity-100 ${
+              currentTeam === 'red'
+                ? 'border-dank-coral bg-dank-coral/20 text-dank-coral'
+                : 'border-white/10 bg-white/5 text-white/60 hover:border-dank-coral/40 hover:text-dank-coral'
+            }`}
+          >
+            🔴
+          </button>
+          <button
+            onClick={() => onSetTeam('blue')}
+            disabled={currentTeam === 'blue'}
+            title="move to blue"
+            className={`h-7 rounded-full border px-2 text-[11px] font-semibold transition disabled:opacity-100 ${
+              currentTeam === 'blue'
+                ? 'border-dank-sky bg-dank-sky/20 text-dank-sky'
+                : 'border-white/10 bg-white/5 text-white/60 hover:border-dank-sky/40 hover:text-dank-sky'
+            }`}
+          >
+            🔵
+          </button>
+        </div>
+      )}
     </div>
   );
 }
