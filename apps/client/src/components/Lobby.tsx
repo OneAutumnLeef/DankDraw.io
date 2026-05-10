@@ -31,13 +31,36 @@ export function Lobby() {
     getSocket().emit('room:start');
   };
 
-  const copyInvite = async () => {
-    const url = `${window.location.origin}/r/${state.roomCode}`;
+  const copyRoomCode = async () => {
+    try {
+      await navigator.clipboard.writeText(state.roomCode);
+      toast('room code copied!', 'success');
+    } catch {
+      toast(state.roomCode);
+    }
+  };
+
+  const shareInvite = async () => {
+    const url = `${window.location.origin}/join/${state.roomCode}`;
+    // Use the platform share sheet on mobile when available; fall back to
+    // clipboard everywhere else.
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: 'Join my DankDraw game!',
+          text: `Come draw with me — room ${state.roomCode}`,
+          url,
+        });
+        return;
+      } catch {
+        // user cancelled, or share failed — fall through to clipboard
+      }
+    }
     try {
       await navigator.clipboard.writeText(url);
       toast('invite link copied!', 'success');
     } catch {
-      toast(state.roomCode);
+      toast(url);
     }
   };
 
@@ -48,14 +71,21 @@ export function Lobby() {
       className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-3 sm:p-4 lg:p-8"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="chip">Room</span>
           <button
-            onClick={copyInvite}
+            onClick={copyRoomCode}
             className="font-display text-2xl tracking-[0.3em] text-white hover:text-dank-pink sm:text-3xl sm:tracking-[0.4em]"
-            title="click to copy invite"
+            title="click to copy the room code"
           >
             {state.roomCode}
+          </button>
+          <button
+            onClick={shareInvite}
+            className="btn-secondary h-9 gap-1.5 px-3 text-xs sm:text-sm"
+            title="copy a fresh-profile invite link"
+          >
+            🔗 Share invite
           </button>
         </div>
         <div className="text-sm text-white/60">

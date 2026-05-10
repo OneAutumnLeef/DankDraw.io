@@ -117,6 +117,10 @@ export class Room {
   private gameStats = new Map<string, { drawn: number; guessed: number; streak: number; bestStreak: number }>();
   /** Achievements already unlocked this session, to avoid re-emit spam. */
   private sessionAchievements = new Set<string>();
+  /** When a player disconnects (vs. explicit leave), they get a grace period to
+   *  rejoin without losing their score / team / drawer-queue position. */
+  static readonly RECONNECT_GRACE_MS = 60_000;
+  private hardRemoveTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(code: string, hostId: string, config: Partial<RoomConfig> = {}) {
     this.code = code;
@@ -218,13 +222,72 @@ export class Room {
     this.broadcastState();
   }
 
-  removePlayer(id: string) {
+  /**
+   * Soft-remove: marks the player disconnected and starts a 60-second grace
+   * timer. If they reconnect (same clientId) within that window, `tryRejoin`
+   * restores them — score, team, drawer-queue position, achievements, all
+   * intact. Used for accidental disconnects (network blip, tab closed).
+   */
+  softRemovePlayer(id: string) {
+    const p = this.players.get(id);
+    if (!p || !p.isConnected) return;
+    p.isConnected = false;
+    this.system(`${p.name} disconnected`);
+
+    // If everyone is now disconnected, just close the room — nothing to grace.
+    const anyConnected = [...this.players.values()].some((pl) => pl.isConnected);
+    if (!anyConnected) {
+      this.cancelTimers();
+      for (const t of this.hardRemoveTimers.values()) clearTimeout(t);
+      this.hardRemoveTimers.clear();
+      this.emit('closed');
+      return;
+    }
+
+    // If they were the host, transfer to the next connected player.
+    if (this.hostId === id) {
+      const next = [...this.players.values()].find((pl) => pl.isConnected);
+      if (next) {
+        this.hostId = next.id;
+        p.isHost = false;
+        next.isHost = true;
+        this.system(`${next.name} is now the host`);
+      }
+    }
+
+    // If they were the drawer mid-round, end the round.
+    if (this.drawerId === id && (this.phase === 'wordChoice' || this.phase === 'drawing')) {
+      this.system(`${p.name} (drawer) disconnected — round ended`);
+      this.endRound('drawerLeft');
+    } else {
+      this.broadcastState();
+    }
+
+    // Schedule the actual eviction.
+    const timer = setTimeout(() => this.hardRemovePlayer(id), Room.RECONNECT_GRACE_MS);
+    this.hardRemoveTimers.set(id, timer);
+  }
+
+  /**
+   * Hard-remove: actually remove the player and all of their state. Used
+   * for explicit "Leave" clicks and when the grace timer expires.
+   */
+  hardRemovePlayer(id: string) {
     const p = this.players.get(id);
     if (!p) return;
+    const timer = this.hardRemoveTimers.get(id);
+    if (timer) clearTimeout(timer);
+    this.hardRemoveTimers.delete(id);
+
     this.players.delete(id);
     this.clientIds.delete(id);
     this.gameStats.delete(id);
-    this.system(`${p.name} left`);
+    this.hasGuessed.delete(id);
+    this.guessOrder = this.guessOrder.filter((s) => s !== id);
+    this.roundScores.delete(id);
+    this.drawerQueue = this.drawerQueue.filter((s) => s !== id);
+    if (this.drawerId === id) this.drawerId = null;
+    if (p.isConnected) this.system(`${p.name} left`);
 
     if (this.players.size === 0) {
       this.cancelTimers();
@@ -232,20 +295,113 @@ export class Room {
       return;
     }
 
+    // Transfer host if necessary (only if they were still host at hard-remove
+    // time — softRemovePlayer may have already transferred).
     if (this.hostId === id) {
-      this.hostId = [...this.players.keys()][0]!;
-      const newHost = this.players.get(this.hostId)!;
-      newHost.isHost = true;
-      this.system(`${newHost.name} is now the host`);
-    }
-
-    if (this.drawerId === id && (this.phase === 'wordChoice' || this.phase === 'drawing')) {
-      this.system(`${p.name} (drawer) left — round ended`);
-      this.endRound('drawerLeft');
-      return;
+      const next = [...this.players.values()].find((pl) => pl.isConnected) ?? [...this.players.values()][0]!;
+      this.hostId = next.id;
+      next.isHost = true;
+      this.system(`${next.name} is now the host`);
     }
 
     this.broadcastState();
+  }
+
+  /**
+   * Compatibility shim — the gateway used to call this for both leave-by-button
+   * and accidental-disconnect; route both through the appropriate path now.
+   */
+  removePlayer(id: string) {
+    this.hardRemovePlayer(id);
+  }
+
+  /**
+   * If a disconnected player with `clientId` exists in this room, re-attach
+   * them under `newSocketId` and restore everything (score, team, drawer-queue
+   * position, achievements, etc). Returns the rebound player or null if no
+   * match was found.
+   */
+  tryRejoin(
+    newSocketId: string,
+    clientId: string,
+    name: string,
+    avatar: string,
+    color: string,
+  ): Player | null {
+    for (const [oldSocketId, p] of this.players.entries()) {
+      if (p.isConnected) continue;
+      if (this.clientIds.get(oldSocketId) !== clientId) continue;
+
+      // Cancel pending hard-remove.
+      const timer = this.hardRemoveTimers.get(oldSocketId);
+      if (timer) clearTimeout(timer);
+      this.hardRemoveTimers.delete(oldSocketId);
+
+      // Update profile fields with the latest from hello.
+      p.name = name;
+      p.avatar = avatar;
+      p.color = color;
+      p.isConnected = true;
+
+      // Re-key all socketId-keyed state from old → new.
+      this.rekeySocket(oldSocketId, newSocketId);
+
+      this.system(`${p.name} reconnected`);
+      this.broadcastState();
+      return p;
+    }
+    return null;
+  }
+
+  /**
+   * Internal helper: rewrite every place that uses a socketId as a key or
+   * reference, mapping `oldId` → `newId`. Called from tryRejoin so the rest
+   * of the Room logic can keep using socket.id without caring that the
+   * connection bounced underneath it.
+   */
+  private rekeySocket(oldId: string, newId: string) {
+    if (oldId === newId) return;
+
+    // Maps keyed by socketId.
+    const remap = <T,>(m: Map<string, T>) => {
+      if (!m.has(oldId)) return;
+      const v = m.get(oldId)!;
+      m.delete(oldId);
+      m.set(newId, v);
+    };
+    // players: also update the contained Player.id
+    if (this.players.has(oldId)) {
+      const v = this.players.get(oldId)!;
+      v.id = newId;
+      this.players.delete(oldId);
+      this.players.set(newId, v);
+    }
+    remap(this.clientIds);
+    remap(this.gameStats);
+    remap(this.roundScores);
+    remap(this.hardRemoveTimers);
+
+    // Scalar refs.
+    if (this.drawerId === oldId) this.drawerId = newId;
+    if (this.hostId === oldId) this.hostId = newId;
+
+    // Arrays of socketIds.
+    this.drawerQueue = this.drawerQueue.map((s) => (s === oldId ? newId : s));
+    this.guessOrder = this.guessOrder.map((s) => (s === oldId ? newId : s));
+
+    // Set of socketIds.
+    if (this.hasGuessed.delete(oldId)) this.hasGuessed.add(newId);
+
+    // Set of "<socketId>:<achievementId>" composite keys.
+    const updatedAch = new Set<string>();
+    for (const k of this.sessionAchievements) {
+      if (k.startsWith(`${oldId}:`)) {
+        updatedAch.add(`${newId}:${k.slice(oldId.length + 1)}`);
+      } else {
+        updatedAch.add(k);
+      }
+    }
+    this.sessionAchievements = updatedAch;
   }
 
   setConnected(id: string, connected: boolean) {
@@ -759,6 +915,8 @@ export class Room {
 
   destroy() {
     this.cancelTimers();
+    for (const t of this.hardRemoveTimers.values()) clearTimeout(t);
+    this.hardRemoveTimers.clear();
     this.players.clear();
   }
 }

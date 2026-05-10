@@ -207,6 +207,33 @@ export function attachGateway(io: IO, manager: RoomManager) {
       if (!parsed.success) return ack?.({ ok: false, error: 'invalid code' });
       const room = manager.get(parsed.data.roomCode);
       if (!room) return ack?.({ ok: false, error: 'room not found' });
+
+      // Try to restore a disconnected player by clientId before treating
+      // this as a fresh join. Capacity / late-join rules don't apply to
+      // a player who's already a member of the room.
+      if (socket.data.clientId) {
+        const restored = room.tryRejoin(
+          socket.id,
+          socket.data.clientId,
+          socket.data.name ?? 'anon',
+          socket.data.avatar ?? '🦊',
+          socket.data.color ?? '#FF6BD6',
+        );
+        if (restored) {
+          ensureBroadcasters(room);
+          if (socket.data.roomCode) socket.leave(socket.data.roomCode);
+          socket.data.roomCode = room.code;
+          socket.emit('room:joined', {
+            selfId: socket.id,
+            state: room.snapshot(),
+            recentChat: room.recentChat(),
+            strokes: room.allStrokes(),
+          });
+          socket.join(room.code);
+          return ack?.({ ok: true });
+        }
+      }
+
       if (room.players.size >= room.config.maxPlayers)
         return ack?.({ ok: false, error: 'room full' });
       if (!room.config.allowLateJoin && room.phase !== 'lobby')
@@ -216,7 +243,7 @@ export function attachGateway(io: IO, manager: RoomManager) {
       ack?.({ ok: true });
     });
 
-    socket.on('room:leave', () => leaveRoom(socket, manager));
+    socket.on('room:leave', () => leaveRoom(socket, manager, 'intentional'));
 
     socket.on('room:updateConfig', (raw) => {
       const parsed = UpdateConfigSchema.safeParse(raw);
@@ -354,7 +381,7 @@ export function attachGateway(io: IO, manager: RoomManager) {
       }
     });
 
-    socket.on('disconnect', () => leaveRoom(socket, manager));
+    socket.on('disconnect', () => leaveRoom(socket, manager, 'disconnect'));
   });
 }
 
@@ -413,10 +440,16 @@ function tryUnlockPersistent(
   io.to(socketId).emit('achievement:unlock', def);
 }
 
-function leaveRoom(socket: S, manager: RoomManager) {
+function leaveRoom(socket: S, manager: RoomManager, reason: 'intentional' | 'disconnect') {
   if (!socket.data.roomCode) return;
   const code = socket.data.roomCode;
   socket.data.roomCode = undefined;
   socket.leave(code);
-  manager.get(code)?.removePlayer(socket.id);
+  const room = manager.get(code);
+  if (!room) return;
+  if (reason === 'intentional') {
+    room.hardRemovePlayer(socket.id);
+  } else {
+    room.softRemovePlayer(socket.id);
+  }
 }
