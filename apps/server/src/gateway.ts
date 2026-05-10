@@ -24,7 +24,6 @@ import {
   UpdateConfigSchema,
   sanitiseText,
   type AchievementId,
-  type ChatMessage,
   type ClientToServerEvents,
   type ServerToClientEvents,
 } from '@dankdraw/shared';
@@ -39,15 +38,139 @@ interface SocketData {
   color?: string;
   clientId?: string;
   roomCode?: string;
-  cleanup?: () => void;
 }
 
 type IO = Server<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 type S = Socket<ClientToServerEvents, ServerToClientEvents, Record<string, never>, SocketData>;
 
 export function attachGateway(io: IO, manager: RoomManager) {
+  /**
+   * Set of rooms whose broadcast listeners are wired up. Each broadcaster
+   * forwards a Room event to all (or specific) sockets via io.to(...) — so
+   * we register them ONCE per room. Earlier we registered per-socket which
+   * meant every chat / state event broadcast N times where N = #players.
+   */
+  const broadcastersAttached = new WeakSet<Room>();
+
+  const ensureBroadcasters = (room: Room) => {
+    if (broadcastersAttached.has(room)) return;
+    broadcastersAttached.add(room);
+
+    room.on('state', (s) => io.to(room.code).emit('room:state', s));
+    room.on('chat', (m) => io.to(room.code).emit('chat:message', m));
+
+    room.on('wordChoices', (drawerId, words, endsAt) => {
+      io.to(drawerId).emit('word:choices', { words, endsAt });
+    });
+
+    room.on('roundStart', (drawerId, word, mask, endsAt) => {
+      // Public broadcast to non-drawers (no word leaked).
+      io.to(room.code).except(drawerId).emit('round:start', {
+        drawerId,
+        wordLength: word.length,
+        wordMask: mask,
+        endsAt,
+      });
+      // Drawer-only payload includes the word.
+      io.to(drawerId).emit('round:start', {
+        drawerId,
+        wordLength: word.length,
+        wordMask: mask,
+        endsAt,
+        word,
+      });
+    });
+
+    room.on('roundHint', (mask) =>
+      io.to(room.code).emit('round:hint', { wordMask: mask }),
+    );
+
+    room.on('roundEnd', (word, perPlayer, endsAt) =>
+      io.to(room.code).emit('round:end', { word, perPlayer, endsAt }),
+    );
+
+    room.on('gameEnd', (podium) => {
+      io.to(room.code).emit('game:end', { podium });
+      // Persist stats — once per game end, not once per player listener.
+      const results = room.collectGameResults();
+      for (const r of results) {
+        const cid = room.clientIds.get(r.socketId);
+        if (!cid) continue;
+        const player = room.players.get(r.socketId);
+        if (!player) continue;
+        repos.recordGame({
+          clientId: cid,
+          name: player.name,
+          avatar: player.avatar,
+          score: r.score,
+          won: r.won,
+          drawn: r.drawn,
+          guessed: r.guessed,
+        });
+        const stats = repos.getPlayer(cid);
+        if (stats) {
+          if (stats.totalScore >= 1000) tryUnlockPersistent(io, r.socketId, cid, 'centurion');
+          if (stats.gamesPlayed >= 10) tryUnlockPersistent(io, r.socketId, cid, 'globetrotter');
+        }
+      }
+    });
+
+    room.on('strokeStart', (fromId, p) =>
+      io.to(room.code).except(fromId).emit('stroke:start', { ...p, fromId }),
+    );
+    room.on('strokeAppend', (fromId, p) =>
+      io.to(room.code).except(fromId).emit('stroke:append', { ...p, fromId }),
+    );
+    room.on('strokeEnd', (fromId, p) =>
+      io.to(room.code).except(fromId).emit('stroke:end', { ...p, fromId }),
+    );
+    room.on('strokeUndo', (id) =>
+      io.to(room.code).emit('stroke:undo', { strokeId: id }),
+    );
+    room.on('canvasClear', () => io.to(room.code).emit('canvas:clear'));
+    room.on('canvasFill', (fromId, p) =>
+      io.to(room.code).emit('canvas:fill', { ...p, fromId }),
+    );
+    room.on('reaction', (fromId, emoji) =>
+      io.to(room.code).emit('reaction', { fromId, emoji }),
+    );
+
+    room.on('whisper', (toId, msg) => {
+      io.to(toId).emit('chat:message', msg);
+    });
+
+    room.on('achievement', (toId, achievementId: AchievementId) => {
+      const cid = room.clientIds.get(toId);
+      const isFirstUnlock = cid ? repos.unlockAchievement(cid, achievementId) : true;
+      if (!isFirstUnlock) return;
+      const def = ACHIEVEMENT_INDEX[achievementId];
+      if (!def) return;
+      io.to(toId).emit('achievement:unlock', def);
+    });
+
+    room.on('telAssignment', (toId, assignment) => {
+      io.to(toId).emit('phone:assignment', assignment);
+    });
+    room.on('telWaiting', (submitted, total) =>
+      io.to(room.code).emit('phone:waiting', { submitted, total }),
+    );
+    room.on('telReveal', (bi, pi, book, tb, tp, ea) =>
+      io.to(room.code).emit('phone:reveal', {
+        bookIndex: bi,
+        pageIndex: pi,
+        totalBooks: tb,
+        totalPages: tp,
+        book,
+        endsAt: ea,
+      }),
+    );
+    // The Room itself frees its listeners when GC'd, so when the last player
+    // leaves and the manager drops the reference, this WeakSet entry also
+    // gets collected — no manual cleanup needed.
+  };
+
   io.on('connection', (socket) => {
-    socket.data = { name: undefined };
+    socket.data = {};
 
     socket.on('hello', (raw, ack) => {
       const parsed = HelloSchema.safeParse(raw);
@@ -77,7 +200,8 @@ export function attachGateway(io: IO, manager: RoomManager) {
       const parsed = CreateRoomSchema.safeParse(raw);
       if (!parsed.success) return ack?.({ ok: false, error: 'invalid config' });
       const room = manager.create(socket.id, parsed.data.config ?? {});
-      joinSocketToRoom(io, socket, room);
+      ensureBroadcasters(room);
+      joinSocketToRoom(socket, room);
       ack?.({ ok: true, roomCode: room.code });
     });
 
@@ -91,7 +215,8 @@ export function attachGateway(io: IO, manager: RoomManager) {
         return ack?.({ ok: false, error: 'room full' });
       if (!room.config.allowLateJoin && room.phase !== 'lobby')
         return ack?.({ ok: false, error: 'game already in progress' });
-      joinSocketToRoom(io, socket, room);
+      ensureBroadcasters(room);
+      joinSocketToRoom(socket, room);
       ack?.({ ok: true });
     });
 
@@ -216,8 +341,6 @@ export function attachGateway(io: IO, manager: RoomManager) {
     socket.on('cursor:move', (raw) => {
       const parsed = CursorMoveSchema.safeParse(raw);
       if (!parsed.success || !socket.data.roomCode) return;
-      // Volatile: best-effort. If a peer's socket has backpressure, drop the
-      // frame instead of queueing — cursors are visual filler, not state.
       socket.volatile.to(socket.data.roomCode).emit('cursor:move', {
         fromId: socket.id,
         x: parsed.data.x,
@@ -250,14 +373,24 @@ function currentRoom(socket: S, manager: RoomManager): Room | null {
   return socket.data.roomCode ? manager.get(socket.data.roomCode) : null;
 }
 
-function joinSocketToRoom(io: IO, socket: S, room: Room) {
-  // Detach from any prior room (no manager.removePlayer call here — caller already did that path
-  // by joining a new room. We just unsubscribe socket-level listeners).
-  socket.data.cleanup?.();
-  socket.data.cleanup = undefined;
+/**
+ * Adds the player to the Room, snapshots the room state to them, then puts
+ * the socket into the room's broadcast channel.
+ *
+ * Order matters:
+ *   1. addPlayer — fires the "X joined" chat event. The socket is NOT in
+ *      the room.code channel yet, so the broadcaster's io.to(room.code)
+ *      delivers only to existing members. The new player gets it via the
+ *      recentChat snapshot below.
+ *   2. socket.emit('room:joined', ...) — sends the new player their
+ *      authoritative snapshot (state, recent chat including their own
+ *      join, current strokes).
+ *   3. socket.join(room.code) — only now do they start receiving live
+ *      broadcasts. Without this ordering, the new player would see their
+ *      own join twice (once from broadcast, once from snapshot).
+ */
+function joinSocketToRoom(socket: S, room: Room) {
   if (socket.data.roomCode) socket.leave(socket.data.roomCode);
-
-  socket.join(room.code);
   socket.data.roomCode = room.code;
 
   room.addPlayer(
@@ -268,7 +401,6 @@ function joinSocketToRoom(io: IO, socket: S, room: Room) {
     socket.data.clientId,
   );
 
-  // Snapshot to the new player.
   socket.emit('room:joined', {
     selfId: socket.id,
     state: room.snapshot(),
@@ -276,132 +408,7 @@ function joinSocketToRoom(io: IO, socket: S, room: Room) {
     strokes: room.allStrokes(),
   });
 
-  // Subscribe this socket's lifetime to room broadcasts.
-  const offState = room.on('state', (s) => io.to(room.code).emit('room:state', s));
-  const offChat = room.on('chat', (m) => io.to(room.code).emit('chat:message', m));
-  const offWordChoices = room.on('wordChoices', (drawerId, words, endsAt) => {
-    if (drawerId === socket.id) socket.emit('word:choices', { words, endsAt });
-  });
-  const offRoundStart = room.on('roundStart', (drawerId, word, mask, endsAt) => {
-    io.to(room.code).emit('round:start', {
-      drawerId,
-      wordLength: word.length,
-      wordMask: mask,
-      endsAt,
-    });
-    // Send the actual word only to the drawer.
-    io.to(drawerId).emit('round:start', {
-      drawerId,
-      wordLength: word.length,
-      wordMask: mask,
-      endsAt,
-      word,
-    });
-  });
-  const offRoundHint = room.on('roundHint', (mask) =>
-    io.to(room.code).emit('round:hint', { wordMask: mask }),
-  );
-  const offRoundEnd = room.on('roundEnd', (word, perPlayer, endsAt) =>
-    io.to(room.code).emit('round:end', { word, perPlayer, endsAt }),
-  );
-  const offGameEnd = room.on('gameEnd', (podium) => {
-    io.to(room.code).emit('game:end', { podium });
-    // Persist stats for every player who has a clientId.
-    const results = room.collectGameResults();
-    for (const r of results) {
-      const cid = room.clientIds.get(r.socketId);
-      if (!cid) continue;
-      const player = room.players.get(r.socketId);
-      if (!player) continue;
-      repos.recordGame({
-        clientId: cid,
-        name: player.name,
-        avatar: player.avatar,
-        score: r.score,
-        won: r.won,
-        drawn: r.drawn,
-        guessed: r.guessed,
-      });
-      // Post-game cumulative achievements.
-      const stats = repos.getPlayer(cid);
-      if (stats) {
-        if (stats.totalScore >= 1000) tryUnlockPersistent(io, r.socketId, cid, 'centurion');
-        if (stats.gamesPlayed >= 10) tryUnlockPersistent(io, r.socketId, cid, 'globetrotter');
-      }
-    }
-  });
-  const offStrokeStart = room.on('strokeStart', (fromId, p) =>
-    io.to(room.code).except(fromId).emit('stroke:start', { ...p, fromId }),
-  );
-  const offStrokeAppend = room.on('strokeAppend', (fromId, p) =>
-    io.to(room.code).except(fromId).emit('stroke:append', { ...p, fromId }),
-  );
-  const offStrokeEnd = room.on('strokeEnd', (fromId, p) =>
-    io.to(room.code).except(fromId).emit('stroke:end', { ...p, fromId }),
-  );
-  const offStrokeUndo = room.on('strokeUndo', (id) =>
-    io.to(room.code).emit('stroke:undo', { strokeId: id }),
-  );
-  const offCanvasClear = room.on('canvasClear', () => io.to(room.code).emit('canvas:clear'));
-  const offCanvasFill = room.on('canvasFill', (fromId, p) =>
-    io.to(room.code).emit('canvas:fill', { ...p, fromId }),
-  );
-  const offReaction = room.on('reaction', (fromId, emoji) =>
-    io.to(room.code).emit('reaction', { fromId, emoji }),
-  );
-  const offWhisper = room.on('whisper', (toId, msg: ChatMessage) => {
-    if (toId === socket.id) socket.emit('chat:message', msg);
-  });
-
-  const offTelAssignment = room.on('telAssignment', (toId, assignment) => {
-    if (toId === socket.id) socket.emit('phone:assignment', assignment);
-  });
-  const offTelWaiting = room.on('telWaiting', (submitted, total) =>
-    io.to(room.code).emit('phone:waiting', { submitted, total }),
-  );
-  const offTelReveal = room.on('telReveal', (bi, pi, book, tb, tp, ea) =>
-    io.to(room.code).emit('phone:reveal', {
-      bookIndex: bi,
-      pageIndex: pi,
-      totalBooks: tb,
-      totalPages: tp,
-      book,
-      endsAt: ea,
-    }),
-  );
-
-  const offAchievement = room.on('achievement', (toId, achievementId) => {
-    if (toId !== socket.id) return;
-    const cid = socket.data.clientId;
-    // Persist to DB if the client has an identity, with idempotent insert.
-    const isFirstUnlock = cid ? repos.unlockAchievement(cid, achievementId) : true;
-    if (!isFirstUnlock) return;
-    const def = ACHIEVEMENT_INDEX[achievementId];
-    if (!def) return;
-    socket.emit('achievement:unlock', def);
-  });
-
-  socket.data.cleanup = () => {
-    offState();
-    offChat();
-    offWordChoices();
-    offRoundStart();
-    offRoundHint();
-    offRoundEnd();
-    offGameEnd();
-    offStrokeStart();
-    offStrokeAppend();
-    offStrokeEnd();
-    offStrokeUndo();
-    offCanvasClear();
-    offCanvasFill();
-    offReaction();
-    offWhisper();
-    offAchievement();
-    offTelAssignment();
-    offTelWaiting();
-    offTelReveal();
-  };
+  socket.join(room.code);
 }
 
 function tryUnlockPersistent(
@@ -420,8 +427,6 @@ function tryUnlockPersistent(
 function leaveRoom(socket: S, manager: RoomManager) {
   if (!socket.data.roomCode) return;
   const code = socket.data.roomCode;
-  socket.data.cleanup?.();
-  socket.data.cleanup = undefined;
   socket.data.roomCode = undefined;
   socket.leave(code);
   manager.get(code)?.removePlayer(socket.id);
