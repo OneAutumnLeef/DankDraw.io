@@ -4,6 +4,15 @@
 
 ![hero](https://img.shields.io/badge/v2.3-Neo--Dank-FF6BD6) ![stack](https://img.shields.io/badge/stack-React%20%2B%20Fastify%20%2B%20Socket.IO-7CC4FF)
 
+## 📸 Screenshots
+
+|  |  |
+|---|---|
+| **Landing** — pick name, avatar, color | **Lobby** — host configures mode + rules |
+| ![landing](docs/screenshots/landing.png) | ![lobby](docs/screenshots/lobby.png) |
+| **Mid-round** — drawer paints while everyone guesses |   |
+| ![round](docs/screenshots/round.png) |   |
+
 ## ✨ Features
 
 - 🏠 **Rooms with shareable codes** — public + private, host configures everything

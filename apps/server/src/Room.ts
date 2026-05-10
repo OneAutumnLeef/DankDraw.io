@@ -43,7 +43,6 @@ export interface RoomEvents {
   strokeEnd: (fromId: string, p: { id: string }) => void;
   strokeUndo: (strokeId: string) => void;
   canvasClear: () => void;
-  canvasFill: (fromId: string, p: { x: number; y: number; color: string }) => void;
   reaction: (fromId: string, emoji: string) => void;
   whisper: (toId: string, msg: ChatMessage) => void;
   achievement: (toId: string, achievementId: AchievementId) => void;
@@ -101,7 +100,6 @@ export class Room {
     strokeEnd: new Set(),
     strokeUndo: new Set(),
     canvasClear: new Set(),
-    canvasFill: new Set(),
     reaction: new Set(),
     whisper: new Set(),
     achievement: new Set(),
@@ -700,11 +698,6 @@ export class Room {
     this.strokes = [];
     this.liveStrokes.clear();
     this.emit('canvasClear');
-  }
-
-  canvasFill(playerId: string, p: { x: number; y: number; color: string }) {
-    if (!this.isDrawer(playerId)) return;
-    this.emit('canvasFill', playerId, p);
   }
 
   reaction(playerId: string, emoji: string) {

@@ -3,7 +3,6 @@ import {
   ChatSendSchema,
   CreateRoomSchema,
   CursorMoveSchema,
-  FillSchema,
   GAME_LIMITS,
   HelloSchema,
   JoinRoomSchema,
@@ -128,9 +127,6 @@ export function attachGateway(io: IO, manager: RoomManager) {
       io.to(room.code).emit('stroke:undo', { strokeId: id }),
     );
     room.on('canvasClear', () => io.to(room.code).emit('canvas:clear'));
-    room.on('canvasFill', (fromId, p) =>
-      io.to(room.code).emit('canvas:fill', { ...p, fromId }),
-    );
     room.on('reaction', (fromId, emoji) =>
       io.to(room.code).emit('reaction', { fromId, emoji }),
     );
@@ -295,13 +291,6 @@ export function attachGateway(io: IO, manager: RoomManager) {
     socket.on('stroke:undo', () => currentRoom(socket, manager)?.strokeUndo(socket.id));
 
     socket.on('canvas:clear', () => currentRoom(socket, manager)?.canvasClear(socket.id));
-
-    socket.on('canvas:fill', (raw) => {
-      const parsed = FillSchema.safeParse(raw);
-      const room = currentRoom(socket, manager);
-      if (!parsed.success || !room) return;
-      room.canvasFill(socket.id, parsed.data);
-    });
 
     socket.on('phone:submitPrompt', (raw) => {
       const parsed = SubmitPromptSchema.safeParse(raw);

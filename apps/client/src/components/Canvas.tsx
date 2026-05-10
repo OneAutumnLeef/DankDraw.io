@@ -103,8 +103,24 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
     (e.target as Element).setPointerCapture(e.pointerId);
 
     if (tool === 'fill') {
-      const [x, y] = localPoint(e.clientX, e.clientY, 0.5);
-      getSocket().emit('canvas:fill', { x, y, color });
+      // Flood fill is modeled as a single-point stroke with tool='fill' so
+      // it lives in the room's persistent stroke history (survives re-renders,
+      // replays, and late joiners) instead of being a fire-and-forget op.
+      const id = nanoid(10);
+      const point = localPoint(e.clientX, e.clientY, 1);
+      useGame.getState().upsertStrokeStart({
+        id,
+        tool: 'fill',
+        color,
+        size: 1,
+        points: [point],
+      });
+      const sock = getSocket();
+      sock.emit('stroke:start', { id, tool: 'fill', color, size: 1, point });
+      sock.emit('stroke:end', { id });
+      // Commit locally so the optimistic stroke is rendered immediately on
+      // the drawer's screen, mirroring the strokeEnd/finishStroke flow.
+      useGame.getState().finishStroke(id);
       return;
     }
 
@@ -332,6 +348,11 @@ function round(n: number) {
 
 function renderStroke(ctx: CanvasRenderingContext2D, s: Stroke) {
   if (s.points.length === 0) return;
+  if (s.tool === 'fill') {
+    const seed = s.points[0]!;
+    floodFill(ctx, seed[0], seed[1], s.color);
+    return;
+  }
   if (s.tool === 'eraser') {
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
@@ -344,6 +365,97 @@ function renderStroke(ctx: CanvasRenderingContext2D, s: Stroke) {
   if (s.tool === 'marker') ctx.globalAlpha = 0.55;
   drawFreehand(ctx, s);
   ctx.restore();
+}
+
+/**
+ * Scanline flood fill from (vx, vy) in virtual coordinates with the target
+ * hex color. Operates on raw pixel data (so we have to undo the canvas's
+ * dpr-scaled transform), then putImageData back. Stack-safe — uses an array
+ * of (x, y) seed pairs rather than recursion.
+ */
+function floodFill(ctx: CanvasRenderingContext2D, vx: number, vy: number, hex: string) {
+  const dpr = window.devicePixelRatio || 1;
+  const x0 = Math.round(vx * dpr);
+  const y0 = Math.round(vy * dpr);
+  const w = ctx.canvas.width;
+  const h = ctx.canvas.height;
+  if (x0 < 0 || y0 < 0 || x0 >= w || y0 >= h) return;
+
+  // Read pixels in raw coordinates — the dpr transform doesn't apply to ImageData.
+  const prevTransform = ctx.getTransform();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+
+  const seedI = (y0 * w + x0) * 4;
+  const sr = d[seedI]!;
+  const sg = d[seedI + 1]!;
+  const sb = d[seedI + 2]!;
+  const sa = d[seedI + 3]!;
+
+  const tr = parseInt(hex.slice(1, 3), 16);
+  const tg = parseInt(hex.slice(3, 5), 16);
+  const tb = parseInt(hex.slice(5, 7), 16);
+
+  // No-op if the pixel is already that exact color.
+  if (sr === tr && sg === tg && sb === tb && sa === 255) {
+    ctx.setTransform(prevTransform);
+    return;
+  }
+
+  const matches = (x: number, y: number) => {
+    const i = (y * w + x) * 4;
+    return d[i] === sr && d[i + 1] === sg && d[i + 2] === sb && d[i + 3] === sa;
+  };
+  const set = (x: number, y: number) => {
+    const i = (y * w + x) * 4;
+    d[i] = tr;
+    d[i + 1] = tg;
+    d[i + 2] = tb;
+    d[i + 3] = 255;
+  };
+
+  // Scanline flood. Push (x, y) seed pairs as flat numbers.
+  const stack: number[] = [x0, y0];
+  while (stack.length > 0) {
+    const py = stack.pop()!;
+    const px = stack.pop()!;
+    if (!matches(px, py)) continue;
+
+    let lx = px;
+    while (lx > 0 && matches(lx - 1, py)) lx--;
+    let rx = px;
+    while (rx < w - 1 && matches(rx + 1, py)) rx++;
+
+    let spanAbove = false;
+    let spanBelow = false;
+    for (let x = lx; x <= rx; x++) {
+      set(x, py);
+      if (py > 0) {
+        if (matches(x, py - 1)) {
+          if (!spanAbove) {
+            stack.push(x, py - 1);
+            spanAbove = true;
+          }
+        } else {
+          spanAbove = false;
+        }
+      }
+      if (py < h - 1) {
+        if (matches(x, py + 1)) {
+          if (!spanBelow) {
+            stack.push(x, py + 1);
+            spanBelow = true;
+          }
+        } else {
+          spanBelow = false;
+        }
+      }
+    }
+  }
+
+  ctx.putImageData(img, 0, 0);
+  ctx.setTransform(prevTransform);
 }
 
 function drawFreehand(ctx: CanvasRenderingContext2D, s: Stroke) {
