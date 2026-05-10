@@ -54,11 +54,15 @@ export const DEFAULT_CONFIG: RoomConfig = {
   isPrivate: false,
 };
 
+export const TeamSchema = z.enum(['red', 'blue']);
+export type Team = z.infer<typeof TeamSchema>;
+
 export const PlayerSchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(GAME_LIMITS.maxNameLength),
   avatar: z.string(),
   color: z.string(),
+  team: TeamSchema.nullable(),
   score: z.number().int().nonnegative(),
   roundScore: z.number().int(),
   hasGuessed: z.boolean(),
@@ -126,6 +130,9 @@ export const PublicGameStateSchema = z.object({
   wordMask: z.string().nullable(),
   wordReveal: z.string().nullable(),
   phaseEndsAt: z.number().nullable(),
+  teamScores: z
+    .object({ red: z.number().int(), blue: z.number().int() })
+    .nullable(),
 });
 export type PublicGameState = z.infer<typeof PublicGameStateSchema>;
 

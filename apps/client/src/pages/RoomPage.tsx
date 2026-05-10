@@ -33,7 +33,12 @@ export function RoomPage() {
     const sock = getSocket();
     sock.emit(
       'hello',
-      { name: profile.name.trim(), avatar: profile.avatar, color: profile.color },
+      {
+        name: profile.name.trim(),
+        avatar: profile.avatar,
+        color: profile.color,
+        clientId: profile.clientId,
+      },
       (r) => {
         if (!r.ok) {
           toast(r.error ?? 'connect failed', 'error');

@@ -2,6 +2,7 @@ import { Route, BrowserRouter, Routes, Navigate } from 'react-router-dom';
 import { Landing } from './pages/Landing';
 import { RoomPage } from './pages/RoomPage';
 import { useSocketBindings } from './hooks/useSocketBindings';
+import { AchievementToastLayer } from './components/AchievementToast';
 import { Background } from './components/Background';
 import { Toasts } from './components/Toasts';
 
@@ -18,6 +19,7 @@ export function App() {
         </Routes>
       </div>
       <Toasts />
+      <AchievementToastLayer />
     </BrowserRouter>
   );
 }

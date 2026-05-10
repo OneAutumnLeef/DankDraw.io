@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { pushAchievement } from '@/components/AchievementToast';
 import { sfx } from '@/lib/sfx';
 import { getSocket } from '@/lib/socket';
 import { useGame, useProfile } from '@/store/gameStore';
@@ -28,7 +29,12 @@ export function useSocketBindings() {
       if (!profile.name) return;
       sock.emit(
         'hello',
-        { name: profile.name, avatar: profile.avatar, color: profile.color },
+        {
+          name: profile.name,
+          avatar: profile.avatar,
+          color: profile.color,
+          clientId: profile.clientId,
+        },
         () => {},
       );
     };
@@ -106,6 +112,11 @@ export function useSocketBindings() {
 
     sock.on('chat:typing', (p) => setTyping(p.fromId, p.typing));
 
+    sock.on('achievement:unlock', (a) => {
+      pushAchievement(a);
+      sfx.fanfare();
+    });
+
     return () => {
       sock.off('connect', sendHello);
       sock.off('room:joined');
@@ -124,6 +135,7 @@ export function useSocketBindings() {
       sock.off('reaction');
       sock.off('cursor:move');
       sock.off('chat:typing');
+      sock.off('achievement:unlock');
     };
   }, [
     profile.name,

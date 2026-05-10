@@ -1,4 +1,5 @@
 import {
+  ACHIEVEMENT_INDEX,
   ChatSendSchema,
   CreateRoomSchema,
   CursorMoveSchema,
@@ -12,17 +13,20 @@ import {
   PRESET_AVATARS,
   PRESET_COLORS,
   ReactionSchema,
+  SetTeamSchema,
   StrokeAppendSchema,
   StrokeEndSchema,
   StrokeStartSchema,
   TypingSchema,
   UpdateConfigSchema,
   sanitiseText,
+  type AchievementId,
   type ChatMessage,
   type ClientToServerEvents,
   type ServerToClientEvents,
 } from '@dankdraw/shared';
 import type { Server, Socket } from 'socket.io';
+import { repos } from './db.js';
 import { Room } from './Room.js';
 import { RoomManager } from './RoomManager.js';
 
@@ -30,6 +34,7 @@ interface SocketData {
   name?: string;
   avatar?: string;
   color?: string;
+  clientId?: string;
   roomCode?: string;
   cleanup?: () => void;
 }
@@ -52,6 +57,15 @@ export function attachGateway(io: IO, manager: RoomManager) {
       socket.data.color = PRESET_COLORS.includes(parsed.data.color as never)
         ? parsed.data.color
         : PRESET_COLORS[0];
+      socket.data.clientId = parsed.data.clientId;
+      if (socket.data.clientId) {
+        repos.upsertPlayer({
+          clientId: socket.data.clientId,
+          name,
+          avatar: socket.data.avatar!,
+          color: socket.data.color!,
+        });
+      }
       ack?.({ ok: true });
     });
 
@@ -94,6 +108,13 @@ export function attachGateway(io: IO, manager: RoomManager) {
       const room = currentRoom(socket, manager);
       if (!parsed.success || !room) return;
       room.kick(socket.id, parsed.data.playerId);
+    });
+
+    socket.on('room:setTeam', (raw) => {
+      const parsed = SetTeamSchema.safeParse(raw);
+      const room = currentRoom(socket, manager);
+      if (!parsed.success || !room) return;
+      room.setTeam(socket.id, parsed.data.playerId, parsed.data.team);
     });
 
     socket.on('chat:send', (raw) => {
@@ -196,6 +217,7 @@ function joinSocketToRoom(io: IO, socket: S, room: Room) {
     socket.data.name ?? 'anon',
     socket.data.avatar ?? '🦊',
     socket.data.color ?? '#FF6BD6',
+    socket.data.clientId,
   );
 
   // Snapshot to the new player.
@@ -234,9 +256,32 @@ function joinSocketToRoom(io: IO, socket: S, room: Room) {
   const offRoundEnd = room.on('roundEnd', (word, perPlayer, endsAt) =>
     io.to(room.code).emit('round:end', { word, perPlayer, endsAt }),
   );
-  const offGameEnd = room.on('gameEnd', (podium) =>
-    io.to(room.code).emit('game:end', { podium }),
-  );
+  const offGameEnd = room.on('gameEnd', (podium) => {
+    io.to(room.code).emit('game:end', { podium });
+    // Persist stats for every player who has a clientId.
+    const results = room.collectGameResults();
+    for (const r of results) {
+      const cid = room.clientIds.get(r.socketId);
+      if (!cid) continue;
+      const player = room.players.get(r.socketId);
+      if (!player) continue;
+      repos.recordGame({
+        clientId: cid,
+        name: player.name,
+        avatar: player.avatar,
+        score: r.score,
+        won: r.won,
+        drawn: r.drawn,
+        guessed: r.guessed,
+      });
+      // Post-game cumulative achievements.
+      const stats = repos.getPlayer(cid);
+      if (stats) {
+        if (stats.totalScore >= 1000) tryUnlockPersistent(io, r.socketId, cid, 'centurion');
+        if (stats.gamesPlayed >= 10) tryUnlockPersistent(io, r.socketId, cid, 'globetrotter');
+      }
+    }
+  });
   const offStrokeStart = room.on('strokeStart', (fromId, p) =>
     io.to(room.code).except(fromId).emit('stroke:start', { ...p, fromId }),
   );
@@ -260,6 +305,17 @@ function joinSocketToRoom(io: IO, socket: S, room: Room) {
     if (toId === socket.id) socket.emit('chat:message', msg);
   });
 
+  const offAchievement = room.on('achievement', (toId, achievementId) => {
+    if (toId !== socket.id) return;
+    const cid = socket.data.clientId;
+    // Persist to DB if the client has an identity, with idempotent insert.
+    const isFirstUnlock = cid ? repos.unlockAchievement(cid, achievementId) : true;
+    if (!isFirstUnlock) return;
+    const def = ACHIEVEMENT_INDEX[achievementId];
+    if (!def) return;
+    socket.emit('achievement:unlock', def);
+  });
+
   socket.data.cleanup = () => {
     offState();
     offChat();
@@ -276,7 +332,21 @@ function joinSocketToRoom(io: IO, socket: S, room: Room) {
     offCanvasFill();
     offReaction();
     offWhisper();
+    offAchievement();
   };
+}
+
+function tryUnlockPersistent(
+  io: IO,
+  socketId: string,
+  clientId: string,
+  achievementId: AchievementId,
+) {
+  const isFirst = repos.unlockAchievement(clientId, achievementId);
+  if (!isFirst) return;
+  const def = ACHIEVEMENT_INDEX[achievementId];
+  if (!def) return;
+  io.to(socketId).emit('achievement:unlock', def);
 }
 
 function leaveRoom(socket: S, manager: RoomManager) {

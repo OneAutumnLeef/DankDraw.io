@@ -47,6 +47,11 @@ async function main() {
 
   app.get('/api/health', async () => ({ ok: true, rooms: manager.count() }));
   app.get('/api/rooms', async () => manager.publicListing());
+  app.get('/api/leaderboard', async (req) => {
+    const { repos } = await import('./db.js');
+    const days = Math.max(1, Math.min(90, Number((req.query as { days?: string }).days ?? 7)));
+    return { window: days, entries: repos.topLeaderboard(days, 50) };
+  });
 
   await app.listen({ port: PORT, host: HOST });
 

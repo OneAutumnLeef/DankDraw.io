@@ -26,6 +26,10 @@ export function PlayerList({ players }: { players: Player[] }) {
               ? 'border-dank-mint/50 bg-dank-mint/10'
               : p.hasGuessed
               ? 'border-dank-sun/40 bg-dank-sun/10'
+              : p.team === 'red'
+              ? 'border-dank-coral/40 bg-dank-coral/5'
+              : p.team === 'blue'
+              ? 'border-dank-sky/40 bg-dank-sky/5'
               : 'border-white/10 bg-white/5',
             !p.isConnected && 'opacity-50',
           )}

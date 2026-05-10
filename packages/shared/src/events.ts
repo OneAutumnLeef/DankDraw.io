@@ -4,6 +4,7 @@ import {
   PublicGameStateSchema,
   RoomConfigSchema,
   StrokeSchema,
+  TeamSchema,
   ToolSchema,
 } from './game.js';
 
@@ -15,6 +16,8 @@ export const HelloSchema = z.object({
   name: z.string().min(1).max(16),
   avatar: z.string().min(1).max(8),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  /** Stable client identity from localStorage. Used for cross-session stats + achievements. */
+  clientId: z.string().min(8).max(64).optional(),
 });
 export type HelloPayload = z.infer<typeof HelloSchema>;
 
@@ -88,6 +91,12 @@ export type CursorMovePayload = z.infer<typeof CursorMoveSchema>;
 export const TypingSchema = z.object({ typing: z.boolean() });
 export type TypingPayload = z.infer<typeof TypingSchema>;
 
+export const SetTeamSchema = z.object({
+  playerId: z.string(),
+  team: TeamSchema,
+});
+export type SetTeamPayload = z.infer<typeof SetTeamSchema>;
+
 // ─────────────────────────────────────────────────────────────────
 // Server → Client payloads
 // ─────────────────────────────────────────────────────────────────
@@ -156,6 +165,7 @@ export interface ClientToServerEvents {
   'room:updateConfig': (p: UpdateConfigPayload) => void;
   'room:start': () => void;
   'room:kick': (p: KickPayload) => void;
+  'room:setTeam': (p: SetTeamPayload) => void;
 
   'chat:send': (p: ChatSendPayload) => void;
   'chat:typing': (p: TypingPayload) => void;
@@ -192,6 +202,8 @@ export interface ServerToClientEvents {
   'stroke:undo': (p: { strokeId: string }) => void;
   'canvas:clear': () => void;
   'canvas:fill': (p: FillPayload & { fromId: string }) => void;
+
+  'achievement:unlock': (p: { id: string; name: string; desc: string; icon: string }) => void;
 
   error: (p: ErrorPayload) => void;
 }

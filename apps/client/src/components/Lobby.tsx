@@ -8,7 +8,7 @@ const MODES: Array<{ id: RoomConfig['mode']; name: string; emoji: string; taglin
   { id: 'classic', name: 'Classic', emoji: '🎨', tagline: 'pictionary, perfected', ready: true },
   { id: 'speedrun', name: 'Speedrun', emoji: '⚡', tagline: 'short rounds, max chaos', ready: true },
   { id: 'custom', name: 'Custom Words', emoji: '✍️', tagline: 'your inside jokes', ready: true },
-  { id: 'teams', name: 'Teams', emoji: '🤝', tagline: 'coming soon', ready: false },
+  { id: 'teams', name: 'Teams', emoji: '🤝', tagline: 'red vs blue', ready: true },
 ];
 
 export function Lobby() {
@@ -121,6 +121,8 @@ export function Lobby() {
         />
       </div>
 
+      {config.mode === 'teams' && <TeamsPanel isHost={isHost} />}
+
       {config.mode === 'custom' && (
         <div className="panel p-4">
           <div className="mb-2 flex items-center justify-between">
@@ -214,6 +216,81 @@ function Slider({
         className="dank-range mt-2 h-2 w-full"
       />
     </label>
+  );
+}
+
+function TeamsPanel({ isHost }: { isHost: boolean }) {
+  const players = useGame((s) => s.state?.players ?? []);
+  const red = players.filter((p) => p.team === 'red');
+  const blue = players.filter((p) => p.team === 'blue');
+  const unassigned = players.filter((p) => !p.team);
+
+  const moveTo = (playerId: string, team: 'red' | 'blue') => {
+    if (!isHost) return;
+    getSocket().emit('room:setTeam', { playerId, team });
+  };
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <TeamColumn label="🔴 Red" players={red} onSwap={(id) => moveTo(id, 'blue')} isHost={isHost} accent="dank-coral" />
+      <TeamColumn label="🔵 Blue" players={blue} onSwap={(id) => moveTo(id, 'red')} isHost={isHost} accent="dank-sky" />
+      {unassigned.length > 0 && (
+        <div className="sm:col-span-2 rounded-2xl border border-dashed border-white/15 bg-white/5 p-3 text-xs text-white/60">
+          {unassigned.length} player{unassigned.length === 1 ? '' : 's'} unassigned —
+          they'll be auto-balanced when the host starts the game.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TeamColumn({
+  label,
+  players,
+  onSwap,
+  isHost,
+  accent,
+}: {
+  label: string;
+  players: { id: string; name: string; avatar: string; color: string }[];
+  onSwap: (id: string) => void;
+  isHost: boolean;
+  accent: string;
+}) {
+  const ringColor = accent === 'dank-coral' ? 'border-dank-coral/40' : 'border-dank-sky/40';
+  const bgColor = accent === 'dank-coral' ? 'bg-dank-coral/5' : 'bg-dank-sky/5';
+  return (
+    <div className={`panel ${ringColor} ${bgColor} p-3`}>
+      <div className="mb-2 font-display text-lg">{label}</div>
+      <div className="space-y-1.5">
+        {players.length === 0 && (
+          <div className="text-xs italic text-white/40">empty</div>
+        )}
+        {players.map((p) => (
+          <div
+            key={p.id}
+            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-2 py-1.5"
+          >
+            <div
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-base"
+              style={{ backgroundColor: p.color + '40', boxShadow: `inset 0 0 0 2px ${p.color}` }}
+            >
+              {p.avatar}
+            </div>
+            <div className="flex-1 truncate text-sm">{p.name}</div>
+            {isHost && (
+              <button
+                onClick={() => onSwap(p.id)}
+                className="text-xs text-white/50 hover:text-white"
+                title="swap team"
+              >
+                ⇄
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LeaderboardCard } from '@/components/LeaderboardCard';
 import { ProfilePicker } from '@/components/ProfilePicker';
 import { toast } from '@/components/Toasts';
 import { getSocket } from '@/lib/socket';
@@ -21,7 +22,12 @@ export function Landing() {
       const sock = getSocket();
       sock.emit(
         'hello',
-        { name: profile.name.trim(), avatar: profile.avatar, color: profile.color },
+        {
+          name: profile.name.trim(),
+          avatar: profile.avatar,
+          color: profile.color,
+          clientId: profile.clientId,
+        },
         (r) => {
           if (!r.ok) {
             toast(r.error ?? 'could not connect', 'error');
@@ -136,9 +142,11 @@ export function Landing() {
         </div>
 
         <p className="text-center text-xs text-white/40">
-          built at GGJ '24 · rebuilt with extra dank · v2.0
+          built at GGJ '24 · rebuilt with extra dank · v2.2
         </p>
       </motion.div>
+
+      <LeaderboardCard />
     </div>
   );
 }

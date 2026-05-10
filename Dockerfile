@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ─── Build stage ──────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
@@ -22,7 +22,7 @@ COPY packages/ packages/
 RUN pnpm --filter @dankdraw/client build
 
 # ─── Runtime stage ────────────────────────────────────────────────────────
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 WORKDIR /app
 
 # dumb-init reaps zombies + forwards signals so SIGTERM actually shuts down.
@@ -36,6 +36,9 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
 ENV CLIENT_DIST=/app/apps/client/dist
+
+RUN mkdir -p /app/data && chown -R app:app /app/data
+ENV DATA_DIR=/app/data
 
 EXPOSE 3000
 USER app

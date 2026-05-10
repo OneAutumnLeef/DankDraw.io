@@ -28,6 +28,14 @@ export function GameEnd() {
 
   const PODIUM_ORDER = [1, 0, 2]; // 2nd, 1st, 3rd → visual ordering
 
+  const teamScores = state.teamScores;
+  const teamWinner =
+    teamScores && teamScores.red !== teamScores.blue
+      ? teamScores.red > teamScores.blue
+        ? 'red'
+        : 'blue'
+      : null;
+
   return (
     <div className="flex flex-1 items-center justify-center p-8">
       <div className="panel max-w-2xl w-full p-8 text-center">
@@ -38,6 +46,41 @@ export function GameEnd() {
         >
           GG
         </motion.h2>
+
+        {teamScores && (
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="mt-3 grid grid-cols-2 gap-2"
+          >
+            <div
+              className={`rounded-2xl border p-3 ${
+                teamWinner === 'red'
+                  ? 'border-dank-coral bg-dank-coral/15 shadow-glow'
+                  : 'border-white/10 bg-white/5'
+              }`}
+            >
+              <div className="text-xs uppercase tracking-widest text-dank-coral">🔴 Red</div>
+              <div className="font-display text-2xl">{teamScores.red}</div>
+            </div>
+            <div
+              className={`rounded-2xl border p-3 ${
+                teamWinner === 'blue'
+                  ? 'border-dank-sky bg-dank-sky/15 shadow-glow'
+                  : 'border-white/10 bg-white/5'
+              }`}
+            >
+              <div className="text-xs uppercase tracking-widest text-dank-sky">🔵 Blue</div>
+              <div className="font-display text-2xl">{teamScores.blue}</div>
+            </div>
+            {teamWinner && (
+              <div className="col-span-2 -mt-1 text-sm text-white/70">
+                Team {teamWinner === 'red' ? '🔴 Red' : '🔵 Blue'} wins!
+              </div>
+            )}
+          </motion.div>
+        )}
 
         <div className="mt-6 grid grid-cols-3 items-end gap-3">
           {PODIUM_ORDER.map((rank, idx) => {

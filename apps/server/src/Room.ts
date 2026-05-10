@@ -7,12 +7,14 @@ import {
   leaksWord,
   pickThreeWords,
   scoreForGuess,
+  type AchievementId,
   type ChatMessage,
   type Phase,
   type Player,
   type PublicGameState,
   type RoomConfig,
   type Stroke,
+  type Team,
   type WordEntry,
 } from '@dankdraw/shared';
 
@@ -41,6 +43,7 @@ export interface RoomEvents {
   canvasFill: (fromId: string, p: { x: number; y: number; color: string }) => void;
   reaction: (fromId: string, emoji: string) => void;
   whisper: (toId: string, msg: ChatMessage) => void;
+  achievement: (toId: string, achievementId: AchievementId) => void;
   closed: () => void;
 }
 
@@ -88,8 +91,16 @@ export class Room {
     canvasFill: new Set(),
     reaction: new Set(),
     whisper: new Set(),
+    achievement: new Set(),
     closed: new Set(),
   };
+
+  /** Map socket.id → persistent clientId (from localStorage). */
+  clientIds = new Map<string, string>();
+  /** Per-game stats keyed by socket.id. Reset at start(). */
+  private gameStats = new Map<string, { drawn: number; guessed: number; streak: number; bestStreak: number }>();
+  /** Achievements already unlocked this session, to avoid re-emit spam. */
+  private sessionAchievements = new Set<string>();
 
   constructor(code: string, hostId: string, config: Partial<RoomConfig> = {}) {
     this.code = code;
@@ -108,11 +119,19 @@ export class Room {
 
   // ── public state snapshot ──
   snapshot(): PublicGameState {
+    const players = [...this.players.values()].sort((a, b) => a.joinedAt - b.joinedAt);
+    let teamScores: { red: number; blue: number } | null = null;
+    if (this.config.mode === 'teams') {
+      teamScores = { red: 0, blue: 0 };
+      for (const p of players) {
+        if (p.team) teamScores[p.team] += p.score;
+      }
+    }
     return {
       roomCode: this.code,
       hostId: this.hostId,
       config: this.config,
-      players: [...this.players.values()].sort((a, b) => a.joinedAt - b.joinedAt),
+      players,
       phase: this.phase,
       round: this.round,
       totalRounds: this.config.rounds,
@@ -120,6 +139,7 @@ export class Room {
       wordMask: this.currentWord ? buildWordMask(this.currentWord.word, this.revealed) : null,
       wordReveal: this.phase === 'roundEnd' && this.currentWord ? this.currentWord.word : null,
       phaseEndsAt: this.phaseEndsAt,
+      teamScores,
     };
   }
 
@@ -132,14 +152,20 @@ export class Room {
   }
 
   // ── join / leave ──
-  addPlayer(id: string, name: string, avatar: string, color: string): Player {
+  addPlayer(id: string, name: string, avatar: string, color: string, clientId?: string): Player {
     const isHost = this.players.size === 0 || id === this.hostId;
     if (this.players.size === 0) this.hostId = id;
+    if (clientId) this.clientIds.set(id, clientId);
+    const team: Team | null =
+      this.config.mode === 'teams'
+        ? this.balanceTeam()
+        : null;
     const player: Player = {
       id,
       name,
       avatar,
       color,
+      team,
       score: 0,
       roundScore: 0,
       hasGuessed: false,
@@ -154,10 +180,30 @@ export class Room {
     return player;
   }
 
+  private balanceTeam(): Team {
+    let red = 0;
+    let blue = 0;
+    for (const p of this.players.values()) {
+      if (p.team === 'red') red++;
+      else if (p.team === 'blue') blue++;
+    }
+    return red <= blue ? 'red' : 'blue';
+  }
+
+  setTeam(byId: string, targetId: string, team: Team) {
+    if (byId !== this.hostId || this.phase !== 'lobby') return;
+    const p = this.players.get(targetId);
+    if (!p) return;
+    p.team = team;
+    this.broadcastState();
+  }
+
   removePlayer(id: string) {
     const p = this.players.get(id);
     if (!p) return;
     this.players.delete(id);
+    this.clientIds.delete(id);
+    this.gameStats.delete(id);
     this.system(`${p.name} left`);
 
     if (this.players.size === 0) {
@@ -212,11 +258,20 @@ export class Room {
     }
     this.round = 0;
     this.drawerQueue = [...this.players.keys()];
+    this.gameStats.clear();
+    this.sessionAchievements.clear();
     for (const p of this.players.values()) {
       p.score = 0;
       p.roundScore = 0;
       p.hasGuessed = false;
       p.isDrawing = false;
+      this.gameStats.set(p.id, { drawn: 0, guessed: 0, streak: 0, bestStreak: 0 });
+      // Auto-assign teams for any player that lacks one in teams mode
+      if (this.config.mode === 'teams' && !p.team) {
+        p.team = this.balanceTeam();
+      }
+      // Clear teams if mode is non-teams
+      if (this.config.mode !== 'teams') p.team = null;
     }
     this.recentlyUsed.clear();
     this.advanceToNextRound();
@@ -368,6 +423,21 @@ export class Room {
       this.roundScores.set(this.drawerId, (this.roundScores.get(this.drawerId) ?? 0) + drawer);
     }
 
+    // ── achievement detection ──
+    const stats = this.gameStats.get(p.id);
+    if (stats) {
+      stats.guessed += 1;
+      stats.streak += 1;
+      stats.bestStreak = Math.max(stats.bestStreak, stats.streak);
+      if (stats.streak >= 3) this.unlock(p.id, 'streak');
+    }
+    if (this.guessOrder.length === 1) this.unlock(p.id, 'first_blood');
+    const elapsedMs = totalMs - remainingMs;
+    if (elapsedMs <= 8_000) this.unlock(p.id, 'speedster');
+    if (remainingMs <= 3_000) this.unlock(p.id, 'late_bloomer');
+    if (this.currentWord.difficulty === 'hard' && this.revealed.size === 0)
+      this.unlock(p.id, 'detective');
+
     this.pushChat({
       kind: 'correct',
       authorId: null,
@@ -382,6 +452,13 @@ export class Room {
     }
   }
 
+  private unlock(playerId: string, achievementId: AchievementId) {
+    const sessionKey = `${playerId}:${achievementId}`;
+    if (this.sessionAchievements.has(sessionKey)) return;
+    this.sessionAchievements.add(sessionKey);
+    this.emit('achievement', playerId, achievementId);
+  }
+
   private endRound(reason: 'timeUp' | 'allGuessed' | 'drawerLeft') {
     this.cancelTimers();
     if (!this.currentWord) {
@@ -390,6 +467,22 @@ export class Room {
     }
     this.phase = 'roundEnd';
     this.phaseEndsAt = Date.now() + GAME_LIMITS.scoreboardTime * 1000;
+
+    // Reset miss streaks; bump drawer's roundsDrawn.
+    for (const p of this.players.values()) {
+      const stats = this.gameStats.get(p.id);
+      if (!stats) continue;
+      if (p.id !== this.drawerId && !this.hasGuessed.has(p.id)) stats.streak = 0;
+      if (p.id === this.drawerId) stats.drawn += 1;
+    }
+    // Picasso: drawer where every non-drawer guessed
+    if (this.drawerId) {
+      const guessers = [...this.players.values()].filter((pl) => pl.id !== this.drawerId);
+      if (guessers.length > 0 && guessers.every((g) => this.hasGuessed.has(g.id))) {
+        this.unlock(this.drawerId, 'picasso');
+      }
+    }
+
     const perPlayer = [...this.players.values()].map((p) => ({
       playerId: p.id,
       gained: this.roundScores.get(p.id) ?? 0,
@@ -422,9 +515,28 @@ export class Room {
     this.cancelTimers();
     this.phase = 'gameEnd';
     this.phaseEndsAt = Date.now() + GAME_LIMITS.gameEndTime * 1000;
-    const podium = [...this.players.values()]
-      .sort((a, b) => b.score - a.score)
-      .map((p) => ({ playerId: p.id, score: p.score, name: p.name, avatar: p.avatar }));
+    const sorted = [...this.players.values()].sort((a, b) => b.score - a.score);
+    const winnerId = sorted[0]?.id;
+    const podium = sorted.map((p) => ({
+      playerId: p.id,
+      score: p.score,
+      name: p.name,
+      avatar: p.avatar,
+    }));
+
+    // Achievements: champion (winner), team_player (winner of teams game)
+    if (winnerId) {
+      this.unlock(winnerId, 'champion');
+      if (this.config.mode === 'teams') {
+        const winnerTeam = this.players.get(winnerId)?.team;
+        if (winnerTeam) {
+          for (const p of this.players.values()) {
+            if (p.team === winnerTeam) this.unlock(p.id, 'team_player');
+          }
+        }
+      }
+    }
+
     this.broadcastState();
     this.emit('gameEnd', podium);
     this.scheduleTimer(GAME_LIMITS.gameEndTime * 1000, () => {
@@ -432,6 +544,28 @@ export class Room {
       this.drawerId = null;
       this.currentWord = null;
       this.broadcastState();
+    });
+  }
+
+  /** Snapshot of per-player game results for the gateway to persist. */
+  collectGameResults(): {
+    socketId: string;
+    score: number;
+    won: boolean;
+    drawn: number;
+    guessed: number;
+  }[] {
+    const sorted = [...this.players.values()].sort((a, b) => b.score - a.score);
+    const winner = sorted[0]?.id;
+    return sorted.map((p) => {
+      const stats = this.gameStats.get(p.id);
+      return {
+        socketId: p.id,
+        score: p.score,
+        won: p.id === winner,
+        drawn: stats?.drawn ?? 0,
+        guessed: stats?.guessed ?? 0,
+      };
     });
   }
 

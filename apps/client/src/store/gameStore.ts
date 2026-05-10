@@ -5,10 +5,13 @@ import {
   type PublicGameState,
   type Stroke,
 } from '@dankdraw/shared';
+import { nanoid } from 'nanoid';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export interface ProfileState {
+  /** Stable per-browser UUID. Generated lazily on first persist. */
+  clientId: string;
   name: string;
   avatar: string;
   color: string;
@@ -18,12 +21,24 @@ export interface ProfileState {
 export const useProfile = create<ProfileState>()(
   persist(
     (set) => ({
+      clientId: nanoid(20),
       name: '',
       avatar: PRESET_AVATARS[0],
       color: PRESET_COLORS[0],
       setProfile: (p) => set((s) => ({ ...s, ...p })),
     }),
-    { name: 'dankdraw-profile' },
+    {
+      name: 'dankdraw-profile',
+      version: 2,
+      // Migrate v1 profile (no clientId) to v2.
+      migrate: (persisted, version) => {
+        const p = (persisted ?? {}) as Partial<ProfileState>;
+        if (version < 2 || !p.clientId) {
+          return { ...p, clientId: nanoid(20) } as ProfileState;
+        }
+        return p as ProfileState;
+      },
+    },
   ),
 );
 

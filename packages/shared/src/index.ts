@@ -1,3 +1,4 @@
+export * from './achievements.js';
 export * from './events.js';
 export * from './game.js';
 export * from './words.js';
