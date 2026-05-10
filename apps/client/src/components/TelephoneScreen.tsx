@@ -18,7 +18,7 @@ export function TelephoneScreen() {
 
   if (!assignment) {
     return (
-      <div className="flex flex-1 items-center justify-center p-8">
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-8">
         <div className="panel max-w-md p-8 text-center">
           <div className="font-display text-2xl">📞 Sketch Telephone</div>
           <div className="mt-2 text-sm text-white/60">waiting for the next round…</div>
@@ -84,8 +84,8 @@ function AssignmentView({
   const danger = remaining <= 10;
 
   return (
-    <div className="flex flex-1 flex-col gap-3 p-3 sm:gap-4 sm:p-4 lg:p-8">
-      <div className="flex items-center justify-between gap-2">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-4 lg:p-8">
+      <div className="flex shrink-0 items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-widest text-white/50">📞 Telephone</div>
           <div className="truncate font-display text-base sm:text-xl">{turnLabel}</div>
@@ -228,8 +228,8 @@ function RevealView({
     .state?.players.find((p) => p.id === page.authorId);
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-3 p-3 sm:gap-4 sm:p-4 lg:p-8">
-      <div className="flex w-full max-w-3xl items-center justify-between gap-2">
+    <div className="flex min-h-0 flex-1 flex-col items-center gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-4 lg:p-8">
+      <div className="flex w-full max-w-3xl shrink-0 items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate text-[10px] uppercase tracking-widest text-white/50">
             📖 Reveal — {reveal.book.ownerAvatar} {reveal.book.ownerName}'s book

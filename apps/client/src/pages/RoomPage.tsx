@@ -88,8 +88,8 @@ export function RoomPage() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] flex-col">
-      <header className="flex items-center justify-between gap-2 border-b border-white/5 px-3 py-2 backdrop-blur lg:px-6">
+    <div className="flex min-h-[100dvh] flex-col lg:h-[100dvh] lg:overflow-hidden">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-white/5 px-3 py-2 backdrop-blur lg:px-6">
         <div className="flex min-w-0 items-center gap-2">
           <button
             onClick={onLeave}
@@ -113,23 +113,25 @@ export function RoomPage() {
       </header>
 
       {/* Mobile-only: horizontal player strip */}
-      <div className="border-b border-white/5 px-3 py-2 lg:hidden">
+      <div className="shrink-0 border-b border-white/5 px-3 py-2 lg:hidden">
         <CompactPlayerStrip players={state.players} />
       </div>
 
-      <main className="flex flex-1 flex-col gap-3 p-3 lg:flex-row lg:p-4">
+      <main className="flex flex-1 flex-col gap-3 p-3 lg:min-h-0 lg:flex-row lg:overflow-hidden lg:p-4">
         {/* Desktop only: vertical player aside */}
-        <aside className="hidden lg:block lg:w-64 lg:shrink-0">
-          <div className="panel p-3">
-            <div className="mb-2 px-1 text-xs font-bold uppercase tracking-wider text-white/50">
+        <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:overflow-hidden">
+          <div className="panel flex h-full flex-col overflow-hidden p-3">
+            <div className="mb-2 shrink-0 px-1 text-xs font-bold uppercase tracking-wider text-white/50">
               Players
             </div>
-            <PlayerList players={state.players} />
+            <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
+              <PlayerList players={state.players} />
+            </div>
           </div>
         </aside>
 
         {/* Center: phase-driven main area */}
-        <section className="flex min-h-0 flex-1 flex-col gap-3 pb-16 lg:pb-0">
+        <section className="flex min-h-0 flex-1 flex-col gap-3 pb-16 lg:overflow-hidden lg:pb-0">
           {state.phase === 'lobby' && <Lobby />}
           {(state.phase === 'telPrompt' ||
             state.phase === 'telTurn' ||
@@ -142,12 +144,12 @@ export function RoomPage() {
                 <>
                   <motion.div
                     layout
-                    className="flex flex-1 min-h-[260px] sm:min-h-[360px] lg:min-h-[420px]"
+                    className="flex min-h-[220px] flex-1 sm:min-h-[280px] lg:min-h-0"
                   >
                     <Canvas isDrawer={isDrawer && state.phase === 'drawing'} />
                   </motion.div>
                   {state.phase === 'drawing' && !isDrawer && (
-                    <div className="flex justify-center">
+                    <div className="flex shrink-0 justify-center">
                       <ReactionBar />
                     </div>
                   )}
@@ -160,8 +162,8 @@ export function RoomPage() {
         </section>
 
         {/* Desktop chat panel */}
-        <aside className="hidden lg:block lg:w-80 lg:shrink-0">
-          <div className="panel flex h-full flex-col overflow-hidden">
+        <aside className="hidden lg:flex lg:w-80 lg:shrink-0 lg:overflow-hidden">
+          <div className="panel flex h-full w-full flex-col overflow-hidden">
             <Chat />
           </div>
         </aside>

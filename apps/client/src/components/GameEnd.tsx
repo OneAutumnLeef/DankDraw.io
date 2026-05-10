@@ -37,7 +37,7 @@ export function GameEnd() {
       : null;
 
   return (
-    <div className="flex flex-1 items-center justify-center p-3 sm:p-8">
+    <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-3 sm:p-8">
       <div className="panel w-full max-w-2xl p-4 text-center sm:p-8">
         <motion.h2
           initial={{ y: 10, opacity: 0 }}

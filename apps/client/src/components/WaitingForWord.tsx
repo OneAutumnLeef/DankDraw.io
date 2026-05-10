@@ -7,7 +7,7 @@ export function WaitingForWord() {
   if (!drawer) return null;
 
   return (
-    <div className="flex flex-1 items-center justify-center p-4 sm:p-8">
+    <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-4 sm:p-8">
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

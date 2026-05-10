@@ -7,7 +7,7 @@ export function RoundEnd() {
   const strokes = useGame((s) => s.strokes);
 
   return (
-    <div className="flex flex-1 items-stretch justify-center p-3 sm:p-4 lg:p-8">
+    <div className="flex min-h-0 flex-1 items-stretch justify-center overflow-y-auto p-3 sm:p-4 lg:p-8">
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

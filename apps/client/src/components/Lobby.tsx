@@ -45,7 +45,7 @@ export function Lobby() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-1 flex-col gap-6 p-3 sm:p-4 lg:p-8"
+      className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto p-3 sm:p-4 lg:p-8"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
