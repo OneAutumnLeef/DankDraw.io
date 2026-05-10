@@ -67,16 +67,38 @@ pnpm format
 > **Heads-up:** Vercel and other "serverless-only" hosts do **not** work for
 > DankDraw — the Socket.IO server holds room state in memory and needs a real,
 > long-lived Node process with persistent WebSockets. Pick a host that runs a
-> real container (Fly, Render, Railway, your own VPS).
+> real container (Render, Fly, Railway, your own VPS).
 
-### Fly.io (recommended)
+### Render.com (no credit card required)
 
-A `Dockerfile` + `fly.toml` are checked in. First time:
+A `render.yaml` blueprint is checked in. Steps:
+
+1. Push the repo to GitHub (already there if you cloned this).
+2. Go to https://render.com → **New** → **Blueprint** → connect the repo.
+3. Render reads `render.yaml`, provisions a free web service, builds the
+   Dockerfile, and gives you a URL like `https://dankdraw.onrender.com`.
+
+Free-tier caveat: the service sleeps after ~15 min idle (first reconnect
+takes ~30 s to wake). Upgrade to Starter ($7/mo) for always-on. Render's
+proxy forwards WebSocket upgrades correctly out of the box.
+
+### Fly.io
+
+A `Dockerfile` + `fly.toml` are checked in. **Note:** Fly removed their
+no-card-required free tier in late 2024 — you'll need to add a payment
+method, but you won't actually be charged unless you exceed the free
+allowances (which one small app comfortably stays under).
+
 ```bash
-fly launch --copy-config --no-deploy   # pick an app name + region
+fly apps create <unique-name> --org personal
+# edit fly.toml: app = "<unique-name>"
 fly deploy
 ```
-Subsequent deploys are just `fly deploy`. The default config:
+
+(`fly launch --copy-config` has a CLI quirk where it ignores the region;
+`fly apps create` + `fly deploy` is the reliable path.)
+
+The config:
 - Sleeps the machine to zero when idle (free-tier friendly)
 - Health-checks `/api/health` every 30 s
 - Caps each machine at ~250 concurrent connections so Socket.IO sticky-session

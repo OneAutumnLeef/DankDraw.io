@@ -1,0 +1,32 @@
+# Render.com deploy config for DankDraw.io
+# https://render.com/docs/blueprint-spec
+#
+# How to use:
+#  1. Push this file to GitHub (already done if you're reading this).
+#  2. Go to https://render.com → New → Blueprint → connect this repo.
+#  3. Render reads this file and provisions the service. No credit card
+#     needed on the free tier.
+#
+# Free-tier caveat: the service sleeps after ~15 min of inactivity, so the
+# first connection after idle wakes it (~30 s). For always-on, upgrade to
+# Starter ($7/mo).
+
+services:
+  - type: web
+    name: dankdraw
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: master
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: LOG_LEVEL
+        value: info
+      # Render injects PORT automatically; the Fastify server reads it.

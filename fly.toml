@@ -10,7 +10,7 @@
 #    avoiding cross-machine Socket.IO sticky-session headaches.
 
 app = "dankdraw"
-primary_region = "iad"
+primary_region = "bom"
 
 [build]
   dockerfile = "Dockerfile"
