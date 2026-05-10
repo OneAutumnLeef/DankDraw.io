@@ -78,9 +78,20 @@ A `render.yaml` blueprint is checked in. Steps:
 3. Render reads `render.yaml`, provisions a free web service, builds the
    Dockerfile, and gives you a URL like `https://dankdraw.onrender.com`.
 
-Free-tier caveat: the service sleeps after ~15 min idle (first reconnect
-takes ~30 s to wake). Upgrade to Starter ($7/mo) for always-on. Render's
-proxy forwards WebSocket upgrades correctly out of the box.
+Free-tier caveats:
+- **Sleeps after ~15 min idle.** First reconnect takes ~30 s to wake.
+  Upgrade to Starter ($7/mo) to keep it always-on.
+- **Region locked to Oregon (us-west) on free tier.** If your players
+  are far from there (e.g. India ↔ Oregon ≈ 270 ms one-way), drawing
+  will visibly lag for peers even though your local view feels fine.
+  The in-room header has a coloured `RTT` chip that shows the
+  round-trip — anything above ~200 ms is going to feel sluggish during
+  live drawing.
+- For a closer region: Render Singapore / Frankfurt are paid only;
+  Fly.io (next section) has free Mumbai / Tokyo / etc. if you add a
+  card.
+
+Render's proxy forwards WebSocket upgrades correctly out of the box.
 
 ### Fly.io
 

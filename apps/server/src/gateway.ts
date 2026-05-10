@@ -216,7 +216,9 @@ export function attachGateway(io: IO, manager: RoomManager) {
     socket.on('cursor:move', (raw) => {
       const parsed = CursorMoveSchema.safeParse(raw);
       if (!parsed.success || !socket.data.roomCode) return;
-      socket.to(socket.data.roomCode).emit('cursor:move', {
+      // Volatile: best-effort. If a peer's socket has backpressure, drop the
+      // frame instead of queueing — cursors are visual filler, not state.
+      socket.volatile.to(socket.data.roomCode).emit('cursor:move', {
         fromId: socket.id,
         x: parsed.data.x,
         y: parsed.data.y,
@@ -230,6 +232,14 @@ export function attachGateway(io: IO, manager: RoomManager) {
         fromId: socket.id,
         typing: parsed.data.typing,
       });
+    });
+
+    socket.on('ping', (ack) => {
+      try {
+        ack?.(Date.now());
+      } catch {
+        // ignore
+      }
     });
 
     socket.on('disconnect', () => leaveRoom(socket, manager));

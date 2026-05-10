@@ -178,6 +178,8 @@ export interface ClientToServerEvents {
   'chat:typing': (p: TypingPayload) => void;
   reaction: (p: ReactionPayload) => void;
   'cursor:move': (p: CursorMovePayload) => void;
+  /** Lightweight RTT probe — server acks immediately. */
+  ping: (ack: (serverTime: number) => void) => void;
 
   'word:pick': (p: PickWordPayload) => void;
 

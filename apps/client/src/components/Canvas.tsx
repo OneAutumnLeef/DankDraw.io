@@ -133,13 +133,18 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
   };
 
   const lastCursorRef = useRef<number>(0);
+  const phase = useGame((s) => s.state?.phase);
   const onPointerMove = (e: React.PointerEvent) => {
-    // Always send cursor presence (throttled), even when not drawing.
-    const now = performance.now();
-    if (now - lastCursorRef.current > 60) {
-      lastCursorRef.current = now;
-      const [cx, cy] = localPoint(e.clientX, e.clientY, 0);
-      getSocket().emit('cursor:move', { x: cx, y: cy });
+    // Cursor presence is only meaningful while someone is drawing — don't
+    // burn bandwidth on it during lobby / scoreboard / etc. Throttle to
+    // ~8 Hz to keep the wire light on slow links (Render free tier especially).
+    if (phase === 'drawing') {
+      const now = performance.now();
+      if (now - lastCursorRef.current > 120) {
+        lastCursorRef.current = now;
+        const [cx, cy] = localPoint(e.clientX, e.clientY, 0);
+        getSocket().volatile.emit('cursor:move', { x: cx, y: cy });
+      }
     }
 
     if (!isDrawer || !liveIdRef.current) return;
@@ -155,7 +160,7 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
       flushTimerRef.current = window.setTimeout(() => {
         flushTimerRef.current = null;
         flush();
-      }, 32);
+      }, 50);
     }
   };
 

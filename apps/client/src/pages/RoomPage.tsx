@@ -7,6 +7,7 @@ import { CompactPlayerStrip } from '@/components/CompactPlayerStrip';
 import { GameEnd } from '@/components/GameEnd';
 import { HUD } from '@/components/HUD';
 import { Lobby } from '@/components/Lobby';
+import { PingIndicator } from '@/components/PingIndicator';
 import { PlayerList } from '@/components/PlayerList';
 import { ReactionBar } from '@/components/ReactionBar';
 import { RoundEnd } from '@/components/RoundEnd';
@@ -98,6 +99,7 @@ export function RoomPage() {
             DankDraw<span className="text-dank-mint">.io</span>
           </button>
           <span className="chip text-[10px]">{state.roomCode}</span>
+          <PingIndicator />
         </div>
         <div className="flex items-center gap-2 text-xs text-white/50">
           <span className="hidden md:inline">
