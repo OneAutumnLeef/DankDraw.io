@@ -8,6 +8,7 @@ build/
 .cache/
 .vite/
 coverage/
-data/*.sqlite
-data/*.db
+data/
+**/data/*.sqlite*
+**/data/*.db*
 .turbo/
