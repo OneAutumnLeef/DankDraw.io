@@ -2,7 +2,9 @@ import { GAME_LIMITS } from '@dankdraw/shared';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
+import { shrinkImage } from '@/lib/image';
 import { getSocket } from '@/lib/socket';
+import { toast } from '@/components/Toasts';
 import { useGame } from '@/store/gameStore';
 
 export function Chat() {
@@ -10,8 +12,12 @@ export function Chat() {
   const selfId = useGame((s) => s.selfId);
   const players = useGame((s) => s.state?.players ?? []);
   const phase = useGame((s) => s.state?.phase);
+  const typing = useGame((s) => s.typing);
   const [draft, setDraft] = useState('');
+  const [uploading, setUploading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const lastTypingRef = useRef<{ on: boolean; ts: number }>({ on: false, ts: 0 });
 
   const me = players.find((p) => p.id === selfId);
   const isDrawer = !!me?.isDrawing;
@@ -23,12 +29,56 @@ export function Chat() {
     el.scrollTop = el.scrollHeight;
   }, [chat.length]);
 
+  // Stop typing on phase transitions.
+  useEffect(() => {
+    if (phase !== 'drawing') {
+      if (lastTypingRef.current.on) {
+        getSocket().emit('chat:typing', { typing: false });
+        lastTypingRef.current = { on: false, ts: Date.now() };
+      }
+    }
+  }, [phase]);
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
     if (!text) return;
     getSocket().emit('chat:send', { text });
     setDraft('');
+    if (lastTypingRef.current.on) {
+      getSocket().emit('chat:typing', { typing: false });
+      lastTypingRef.current = { on: false, ts: Date.now() };
+    }
+  };
+
+  const onDraftChange = (v: string) => {
+    setDraft(v);
+    const now = Date.now();
+    const shouldBeTyping = v.trim().length > 0;
+    if (shouldBeTyping !== lastTypingRef.current.on || now - lastTypingRef.current.ts > 2500) {
+      getSocket().emit('chat:typing', { typing: shouldBeTyping });
+      lastTypingRef.current = { on: shouldBeTyping, ts: now };
+    }
+  };
+
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    if (isDrawer && phase === 'drawing') {
+      toast("you're drawing — no images right now", 'error');
+      return;
+    }
+    setUploading(true);
+    try {
+      const url = await shrinkImage(file);
+      if (!url) {
+        toast('image too big or unsupported', 'error');
+        return;
+      }
+      getSocket().emit('chat:send', { text: '', image: url });
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
   };
 
   const placeholder = isDrawer
@@ -39,12 +89,14 @@ export function Chat() {
     ? 'type your guess…'
     : 'say something';
 
+  const typingNames = players
+    .filter((p) => p.id !== selfId && typing.has(p.id))
+    .map((p) => p.name)
+    .slice(0, 3);
+
   return (
     <div className="flex h-full flex-col">
-      <div
-        ref={listRef}
-        className="no-scrollbar flex-1 space-y-1.5 overflow-y-auto px-3 py-3"
-      >
+      <div ref={listRef} className="no-scrollbar flex-1 space-y-1.5 overflow-y-auto px-3 py-3">
         <AnimatePresence initial={false}>
           {chat.map((m) => {
             const mine = m.authorId === selfId;
@@ -77,6 +129,7 @@ export function Chat() {
                       mine={mine}
                       authorName={m.authorName ?? '?'}
                       text={m.text}
+                      image={m.image}
                       kind={m.kind}
                     />
                   </>
@@ -87,16 +140,35 @@ export function Chat() {
         </AnimatePresence>
       </div>
 
-      <form
-        onSubmit={onSubmit}
-        className="flex gap-2 border-t border-white/10 bg-ink-900/60 p-3"
-      >
+      {typingNames.length > 0 && (
+        <div className="px-4 pb-1 text-[11px] text-white/40">
+          {typingNames.join(', ')} {typingNames.length === 1 ? 'is' : 'are'} typing…
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} className="flex gap-2 border-t border-white/10 bg-ink-900/60 p-3">
+        <button
+          type="button"
+          title="attach image"
+          onClick={() => fileRef.current?.click()}
+          className="btn-ghost h-10 w-10 p-0 text-lg"
+          disabled={uploading}
+        >
+          {uploading ? '⏳' : '📎'}
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => onFile(e.target.files?.[0])}
+        />
         <input
           className="input flex-1"
           maxLength={GAME_LIMITS.maxChatLength}
           placeholder={placeholder}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => onDraftChange(e.target.value)}
         />
         <button
           type="submit"
@@ -134,11 +206,13 @@ function PlayerBubble({
   mine,
   authorName,
   text,
+  image,
   kind,
 }: {
   mine: boolean;
   authorName: string;
   text: string;
+  image?: string;
   kind: string;
 }) {
   return (
@@ -154,7 +228,15 @@ function PlayerBubble({
             : 'bg-white/10 text-white',
         )}
       >
-        {text}
+        {image && (
+          <img
+            src={image}
+            alt="meme"
+            className="mb-1 max-h-48 max-w-full rounded-lg border border-white/10"
+            draggable={false}
+          />
+        )}
+        {text && <div>{text}</div>}
       </div>
     </div>
   );

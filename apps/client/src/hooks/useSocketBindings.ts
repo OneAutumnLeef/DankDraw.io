@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { sfx } from '@/lib/sfx';
 import { getSocket } from '@/lib/socket';
 import { useGame, useProfile } from '@/store/gameStore';
 
@@ -10,6 +11,9 @@ export function useSocketBindings() {
   const setMyWord = useGame((s) => s.setMyWord);
   const setWordChoices = useGame((s) => s.setWordChoices);
   const addReaction = useGame((s) => s.addReaction);
+  const setCursor = useGame((s) => s.setCursor);
+  const removeCursor = useGame((s) => s.removeCursor);
+  const setTyping = useGame((s) => s.setTyping);
   const upsertStrokeStart = useGame((s) => s.upsertStrokeStart);
   const appendToStroke = useGame((s) => s.appendToStroke);
   const finishStroke = useGame((s) => s.finishStroke);
@@ -35,15 +39,26 @@ export function useSocketBindings() {
       setRoomJoined(p);
     });
 
-    sock.on('room:state', (s) => setState(s));
+    sock.on('room:state', (s) => {
+      setState(s);
+      const ids = new Set(s.players.map((pl) => pl.id));
+      const cursors = useGame.getState().cursors;
+      for (const id of cursors.keys()) {
+        if (!ids.has(id)) removeCursor(id);
+      }
+    });
 
-    sock.on('chat:message', (m) => pushChat(m));
+    sock.on('chat:message', (m) => {
+      pushChat(m);
+      if (m.kind === 'correct') sfx.correct();
+    });
 
     sock.on('word:choices', (c) => setWordChoices(c));
 
     sock.on('round:start', (p) => {
       setMyWord(p.word ?? null);
       setWordChoices(null);
+      sfx.whoosh();
     });
 
     sock.on('round:hint', () => {
@@ -58,6 +73,7 @@ export function useSocketBindings() {
     sock.on('game:end', () => {
       setMyWord(null);
       setWordChoices(null);
+      sfx.fanfare();
     });
 
     sock.on('stroke:start', (p) => {
@@ -86,6 +102,10 @@ export function useSocketBindings() {
 
     sock.on('reaction', (p) => addReaction(p.fromId, p.emoji));
 
+    sock.on('cursor:move', (p) => setCursor(p.fromId, p.x, p.y));
+
+    sock.on('chat:typing', (p) => setTyping(p.fromId, p.typing));
+
     return () => {
       sock.off('connect', sendHello);
       sock.off('room:joined');
@@ -102,6 +122,8 @@ export function useSocketBindings() {
       sock.off('stroke:undo');
       sock.off('canvas:clear');
       sock.off('reaction');
+      sock.off('cursor:move');
+      sock.off('chat:typing');
     };
   }, [
     profile.name,
@@ -113,6 +135,9 @@ export function useSocketBindings() {
     setMyWord,
     setWordChoices,
     addReaction,
+    setCursor,
+    removeCursor,
+    setTyping,
     upsertStrokeStart,
     appendToStroke,
     finishStroke,

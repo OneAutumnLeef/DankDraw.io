@@ -34,7 +34,8 @@ export const UpdateConfigSchema = z.object({
 export type UpdateConfigPayload = z.infer<typeof UpdateConfigSchema>;
 
 export const ChatSendSchema = z.object({
-  text: z.string().min(1).max(240),
+  text: z.string().max(240).default(''),
+  image: z.string().max(280_000).optional(),
 });
 export type ChatSendPayload = z.infer<typeof ChatSendSchema>;
 
@@ -77,6 +78,15 @@ export const KickSchema = z.object({
   playerId: z.string(),
 });
 export type KickPayload = z.infer<typeof KickSchema>;
+
+export const CursorMoveSchema = z.object({
+  x: z.number().min(-200).max(2000),
+  y: z.number().min(-200).max(2000),
+});
+export type CursorMovePayload = z.infer<typeof CursorMoveSchema>;
+
+export const TypingSchema = z.object({ typing: z.boolean() });
+export type TypingPayload = z.infer<typeof TypingSchema>;
 
 // ─────────────────────────────────────────────────────────────────
 // Server → Client payloads
@@ -148,7 +158,9 @@ export interface ClientToServerEvents {
   'room:kick': (p: KickPayload) => void;
 
   'chat:send': (p: ChatSendPayload) => void;
+  'chat:typing': (p: TypingPayload) => void;
   reaction: (p: ReactionPayload) => void;
+  'cursor:move': (p: CursorMovePayload) => void;
 
   'word:pick': (p: PickWordPayload) => void;
 
@@ -170,7 +182,9 @@ export interface ServerToClientEvents {
   'game:end': (p: GameEndPayload) => void;
 
   'chat:message': (p: z.infer<typeof ChatMessageSchema>) => void;
+  'chat:typing': (p: { fromId: string; typing: boolean }) => void;
   reaction: (p: { fromId: string; emoji: string }) => void;
+  'cursor:move': (p: { fromId: string; x: number; y: number }) => void;
 
   'stroke:start': (p: StrokeStartPayload & { fromId: string }) => void;
   'stroke:append': (p: StrokeAppendPayload & { fromId: string }) => void;

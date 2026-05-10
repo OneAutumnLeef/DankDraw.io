@@ -7,7 +7,9 @@ import { GameEnd } from '@/components/GameEnd';
 import { HUD } from '@/components/HUD';
 import { Lobby } from '@/components/Lobby';
 import { PlayerList } from '@/components/PlayerList';
+import { ReactionBar } from '@/components/ReactionBar';
 import { RoundEnd } from '@/components/RoundEnd';
+import { SettingsMenu } from '@/components/SettingsMenu';
 import { toast } from '@/components/Toasts';
 import { WaitingForWord } from '@/components/WaitingForWord';
 import { WordChoiceModal } from '@/components/WordChoiceModal';
@@ -86,6 +88,7 @@ export function RoomPage() {
           <span className="hidden sm:inline">
             {state.players.length} player{state.players.length === 1 ? '' : 's'}
           </span>
+          <SettingsMenu />
           <button onClick={onLeave} className="btn-ghost h-9 px-3 text-sm">
             Leave
           </button>
@@ -111,9 +114,16 @@ export function RoomPage() {
               <HUD />
               {state.phase === 'wordChoice' && !isDrawer && <WaitingForWord />}
               {(state.phase === 'drawing' || (state.phase === 'wordChoice' && isDrawer)) && (
-                <motion.div layout className="flex flex-1 min-h-[420px]">
-                  <Canvas isDrawer={isDrawer && state.phase === 'drawing'} />
-                </motion.div>
+                <>
+                  <motion.div layout className="flex flex-1 min-h-[420px]">
+                    <Canvas isDrawer={isDrawer && state.phase === 'drawing'} />
+                  </motion.div>
+                  {state.phase === 'drawing' && !isDrawer && (
+                    <div className="flex justify-center">
+                      <ReactionBar />
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}

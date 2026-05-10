@@ -16,6 +16,8 @@ export const GAME_LIMITS = {
   maxChatLength: 240,
   maxStrokesPerRound: 4000,
   maxStrokePoints: 1024,
+  /** Max base64-encoded chat image bytes (≈ 200 KB after b64 overhead). */
+  maxChatImageChars: 280_000,
 } as const;
 
 export const GameModeSchema = z.enum(['classic', 'teams', 'custom', 'speedrun']);
@@ -108,6 +110,7 @@ export const ChatMessageSchema = z.object({
   authorId: z.string().nullable(),
   authorName: z.string().nullable(),
   text: z.string().max(GAME_LIMITS.maxChatLength),
+  image: z.string().max(GAME_LIMITS.maxChatImageChars).optional(),
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 

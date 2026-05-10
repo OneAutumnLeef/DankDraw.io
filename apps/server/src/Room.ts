@@ -313,20 +313,20 @@ export class Room {
   }
 
   // ── chat / guesses ──
-  chatSend(playerId: string, text: string) {
+  chatSend(playerId: string, text: string, image?: string) {
     const p = this.players.get(playerId);
     if (!p) return;
 
     if (this.phase === 'drawing' && playerId === this.drawerId) {
-      if (this.currentWord && leaksWord(text, this.currentWord.word)) {
+      if (text && this.currentWord && leaksWord(text, this.currentWord.word)) {
         this.systemTo(playerId, "spoiler blocked: don't type the word!");
         return;
       }
-      this.pushChat({ kind: 'player', authorId: p.id, authorName: p.name, text });
+      this.pushChat({ kind: 'player', authorId: p.id, authorName: p.name, text, image });
       return;
     }
 
-    if (this.phase === 'drawing' && this.currentWord && !this.hasGuessed.has(playerId)) {
+    if (this.phase === 'drawing' && this.currentWord && !this.hasGuessed.has(playerId) && text && !image) {
       const verdict = classifyGuess(text, this.currentWord.word);
       if (verdict === 'correct') {
         this.acceptGuess(p);
@@ -341,7 +341,7 @@ export class Room {
       return;
     }
 
-    this.pushChat({ kind: 'player', authorId: p.id, authorName: p.name, text });
+    this.pushChat({ kind: 'player', authorId: p.id, authorName: p.name, text, image });
   }
 
   private acceptGuess(p: Player) {
@@ -501,7 +501,13 @@ export class Room {
   }
 
   // ── chat helpers ──
-  private pushChat(partial: { kind: ChatMessage['kind']; authorId: string | null; authorName: string | null; text: string }) {
+  private pushChat(partial: {
+    kind: ChatMessage['kind'];
+    authorId: string | null;
+    authorName: string | null;
+    text: string;
+    image?: string;
+  }) {
     const msg: ChatMessage = {
       id: nanoid(10),
       ts: Date.now(),
@@ -509,6 +515,7 @@ export class Room {
       authorId: partial.authorId,
       authorName: partial.authorName,
       text: partial.text.slice(0, GAME_LIMITS.maxChatLength),
+      ...(partial.image ? { image: partial.image } : {}),
     };
     this.chatLog.push(msg);
     if (this.chatLog.length > 200) this.chatLog.shift();

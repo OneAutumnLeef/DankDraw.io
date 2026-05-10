@@ -1,11 +1,13 @@
 import {
   ChatSendSchema,
   CreateRoomSchema,
+  CursorMoveSchema,
   FillSchema,
   GAME_LIMITS,
   HelloSchema,
   JoinRoomSchema,
   KickSchema,
+  maskProfanity,
   PickWordSchema,
   PRESET_AVATARS,
   PRESET_COLORS,
@@ -13,6 +15,7 @@ import {
   StrokeAppendSchema,
   StrokeEndSchema,
   StrokeStartSchema,
+  TypingSchema,
   UpdateConfigSchema,
   sanitiseText,
   type ChatMessage,
@@ -97,9 +100,12 @@ export function attachGateway(io: IO, manager: RoomManager) {
       const parsed = ChatSendSchema.safeParse(raw);
       const room = currentRoom(socket, manager);
       if (!parsed.success || !room) return;
-      const text = sanitiseText(parsed.data.text, GAME_LIMITS.maxChatLength);
-      if (!text) return;
-      room.chatSend(socket.id, text);
+      const text = maskProfanity(sanitiseText(parsed.data.text, GAME_LIMITS.maxChatLength));
+      const image = parsed.data.image && /^data:image\/(png|jpeg|gif|webp);base64,/.test(parsed.data.image)
+        ? parsed.data.image
+        : undefined;
+      if (!text && !image) return;
+      room.chatSend(socket.id, text, image);
     });
 
     socket.on('reaction', (raw) => {
@@ -146,6 +152,25 @@ export function attachGateway(io: IO, manager: RoomManager) {
       const room = currentRoom(socket, manager);
       if (!parsed.success || !room) return;
       room.canvasFill(socket.id, parsed.data);
+    });
+
+    socket.on('cursor:move', (raw) => {
+      const parsed = CursorMoveSchema.safeParse(raw);
+      if (!parsed.success || !socket.data.roomCode) return;
+      socket.to(socket.data.roomCode).emit('cursor:move', {
+        fromId: socket.id,
+        x: parsed.data.x,
+        y: parsed.data.y,
+      });
+    });
+
+    socket.on('chat:typing', (raw) => {
+      const parsed = TypingSchema.safeParse(raw);
+      if (!parsed.success || !socket.data.roomCode) return;
+      socket.to(socket.data.roomCode).emit('chat:typing', {
+        fromId: socket.id,
+        typing: parsed.data.typing,
+      });
     });
 
     socket.on('disconnect', () => leaveRoom(socket, manager));

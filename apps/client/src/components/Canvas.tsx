@@ -6,6 +6,8 @@ import { getStroke } from 'perfect-freehand';
 import clsx from 'clsx';
 import { getSocket } from '@/lib/socket';
 import { useGame } from '@/store/gameStore';
+import { CursorPresence } from './CursorPresence';
+import { ReactionLayer } from './ReactionLayer';
 
 const PALETTE = [
   '#0E0B1F', '#FFFFFF',
@@ -130,7 +132,16 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
     });
   };
 
+  const lastCursorRef = useRef<number>(0);
   const onPointerMove = (e: React.PointerEvent) => {
+    // Always send cursor presence (throttled), even when not drawing.
+    const now = performance.now();
+    if (now - lastCursorRef.current > 60) {
+      lastCursorRef.current = now;
+      const [cx, cy] = localPoint(e.clientX, e.clientY, 0);
+      getSocket().emit('cursor:move', { x: cx, y: cy });
+    }
+
     if (!isDrawer || !liveIdRef.current) return;
     e.preventDefault();
     const events = (e.nativeEvent as PointerEvent).getCoalescedEvents?.() ?? [e.nativeEvent];
@@ -207,6 +218,8 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
             👀 watching
           </div>
         )}
+        <CursorPresence canvasRef={canvasRef} virtualW={VIRTUAL_W} virtualH={VIRTUAL_H} />
+        <ReactionLayer canvasRef={canvasRef} />
       </div>
 
       {/* Toolbar */}

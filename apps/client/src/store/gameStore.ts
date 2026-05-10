@@ -38,6 +38,8 @@ export interface GameStoreState {
   /** Choices for the drawer to pick from. */
   wordChoices: { words: string[]; endsAt: number } | null;
   reactions: { id: string; fromId: string; emoji: string; ts: number }[];
+  cursors: Map<string, { x: number; y: number; ts: number }>;
+  typing: Set<string>;
   setRoomJoined: (p: {
     selfId: string;
     state: PublicGameState;
@@ -50,6 +52,9 @@ export interface GameStoreState {
   setWordChoices: (c: { words: string[]; endsAt: number } | null) => void;
   addReaction: (fromId: string, emoji: string) => void;
   clearReaction: (id: string) => void;
+  setCursor: (id: string, x: number, y: number) => void;
+  removeCursor: (id: string) => void;
+  setTyping: (id: string, typing: boolean) => void;
   // Stroke management
   upsertStrokeStart: (s: Stroke) => void;
   appendToStroke: (id: string, points: [number, number, number][]) => void;
@@ -68,6 +73,8 @@ export const useGame = create<GameStoreState>((set) => ({
   myWord: null,
   wordChoices: null,
   reactions: [],
+  cursors: new Map(),
+  typing: new Set(),
 
   setRoomJoined: ({ selfId, state, recentChat, strokes }) =>
     set({
@@ -79,6 +86,8 @@ export const useGame = create<GameStoreState>((set) => ({
       myWord: null,
       wordChoices: null,
       reactions: [],
+      cursors: new Map(),
+      typing: new Set(),
     }),
   setState: (state) => set({ state }),
   pushChat: (m) =>
@@ -94,6 +103,26 @@ export const useGame = create<GameStoreState>((set) => ({
       ],
     })),
   clearReaction: (id) => set((s) => ({ reactions: s.reactions.filter((r) => r.id !== id) })),
+
+  setCursor: (id, x, y) =>
+    set((s) => {
+      const next = new Map(s.cursors);
+      next.set(id, { x, y, ts: Date.now() });
+      return { cursors: next };
+    }),
+  removeCursor: (id) =>
+    set((s) => {
+      const next = new Map(s.cursors);
+      next.delete(id);
+      return { cursors: next };
+    }),
+  setTyping: (id, typing) =>
+    set((s) => {
+      const next = new Set(s.typing);
+      if (typing) next.add(id);
+      else next.delete(id);
+      return { typing: next };
+    }),
 
   upsertStrokeStart: (stroke) =>
     set((s) => {
@@ -138,5 +167,7 @@ export const useGame = create<GameStoreState>((set) => ({
       myWord: null,
       wordChoices: null,
       reactions: [],
+      cursors: new Map(),
+      typing: new Set(),
     }),
 }));
