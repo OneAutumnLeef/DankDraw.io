@@ -35,7 +35,7 @@ export function LeaderboardCard() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.2 }}
-      className="panel w-full max-w-md p-5"
+      className="panel w-full p-5"
     >
       <div className="mb-3 flex items-baseline justify-between">
         <h3 className="font-display text-xl text-white">🏆 Top Doodlers</h3>
