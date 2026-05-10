@@ -6,6 +6,7 @@ import { getStroke } from 'perfect-freehand';
 import clsx from 'clsx';
 import { getSocket } from '@/lib/socket';
 import { useGame } from '@/store/gameStore';
+import { ColorPicker } from './ColorPicker';
 import { CursorPresence } from './CursorPresence';
 import { ReactionLayer } from './ReactionLayer';
 
@@ -264,7 +265,15 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
               </button>
             ))}
           </div>
-          {/* Palette */}
+          {/* Color picker (full HSV + hex + recents + 36-swatch palette) */}
+          <ColorPicker
+            color={color}
+            onChange={(c) => {
+              setColor(c);
+              if (tool === 'eraser') setTool('pen');
+            }}
+          />
+          {/* Inline quick-access swatches — the brand-y dank set */}
           <div className="flex flex-wrap gap-1">
             {PALETTE.map((c) => (
               <button
@@ -281,16 +290,6 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
                 aria-label={`color ${c}`}
               />
             ))}
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => {
-                setColor(e.target.value);
-                if (tool === 'eraser') setTool('pen');
-              }}
-              className="h-7 w-7 cursor-pointer rounded-lg border-2 border-black/20 sm:h-8 sm:w-8"
-              aria-label="custom color"
-            />
           </div>
           {/* Size */}
           <div className="flex items-center gap-2">

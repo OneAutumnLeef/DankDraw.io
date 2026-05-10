@@ -1,0 +1,17 @@
+{
+  "name": "DankDraw.io",
+  "short_name": "DankDraw",
+  "description": "Multiplayer pictionary, but extra dank.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0E0B1F",
+  "theme_color": "#0E0B1F",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "1242x1242",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

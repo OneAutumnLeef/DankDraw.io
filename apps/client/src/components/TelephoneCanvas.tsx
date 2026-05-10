@@ -3,6 +3,7 @@ import { GAME_LIMITS } from '@dankdraw/shared';
 import { nanoid } from 'nanoid';
 import { useEffect, useRef, useState } from 'react';
 import { getStroke } from 'perfect-freehand';
+import { ColorPicker } from './ColorPicker';
 
 const VW = 1200;
 const VH = 800;
@@ -151,6 +152,13 @@ export function TelephoneCanvas({ onChange, disabled }: Props) {
         >
           🧽
         </button>
+        <ColorPicker
+          color={color}
+          onChange={(c) => {
+            setColor(c);
+            setTool('pen');
+          }}
+        />
         <div className="flex flex-wrap gap-1">
           {PALETTE.map((c) => (
             <button

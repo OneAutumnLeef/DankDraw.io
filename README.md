@@ -1,8 +1,17 @@
-# 🎨 DankDraw.io
+<p align="center">
+  <img src="apps/client/public/logo.png" alt="DankDraw.io" width="240" />
+</p>
 
-> Multiplayer pictionary, but extra dank. Originally a 2024 Global Game Jam project — fully renovated in v2 with a state-of-the-art stack and a brand-new "Neo-Dank" feel.
+<h1 align="center">DankDraw.io</h1>
 
-![hero](https://img.shields.io/badge/v2.3-Neo--Dank-FF6BD6) ![stack](https://img.shields.io/badge/stack-React%20%2B%20Fastify%20%2B%20Socket.IO-7CC4FF)
+<p align="center"><em>Multiplayer pictionary, but extra dank.</em></p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/v2.3-Neo--Dank-FF6BD6" alt="version" />
+  <img src="https://img.shields.io/badge/stack-React%20%2B%20Fastify%20%2B%20Socket.IO-7CC4FF" alt="stack" />
+</p>
+
+> Originally a 2024 Global Game Jam project — fully renovated in v2 with a state-of-the-art stack and a brand-new "Neo-Dank" feel.
 
 ## 📸 Screenshots
 

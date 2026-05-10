@@ -122,6 +122,27 @@
   }
 }
 
+/* react-colorful tweaks: round corners + a touch more padding so the
+   saturation surface and hue strip fit the dark popover styling. */
+.dank-color-picker .react-colorful {
+  width: 100% !important;
+  height: 11rem !important;
+}
+.dank-color-picker .react-colorful__saturation {
+  border-radius: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.dank-color-picker .react-colorful__hue {
+  border-radius: 999px;
+  height: 1rem;
+}
+.dank-color-picker .react-colorful__pointer {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-width: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
 .dank-range {
   -webkit-appearance: none;
   appearance: none;
