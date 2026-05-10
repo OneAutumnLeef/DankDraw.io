@@ -7,6 +7,13 @@ import {
   TeamSchema,
   ToolSchema,
 } from './game.js';
+import {
+  SubmitCaptionSchema,
+  SubmitDrawSchema,
+  SubmitPromptSchema,
+  TelAssignmentSchema,
+  TelRevealSchema,
+} from './telephone.js';
 
 // ─────────────────────────────────────────────────────────────────
 // Client → Server payloads
@@ -174,6 +181,10 @@ export interface ClientToServerEvents {
 
   'word:pick': (p: PickWordPayload) => void;
 
+  'phone:submitPrompt': (p: z.infer<typeof SubmitPromptSchema>) => void;
+  'phone:submitDraw': (p: z.infer<typeof SubmitDrawSchema>) => void;
+  'phone:submitCaption': (p: z.infer<typeof SubmitCaptionSchema>) => void;
+
   'stroke:start': (p: StrokeStartPayload) => void;
   'stroke:append': (p: StrokeAppendPayload) => void;
   'stroke:end': (p: StrokeEndPayload) => void;
@@ -204,6 +215,10 @@ export interface ServerToClientEvents {
   'canvas:fill': (p: FillPayload & { fromId: string }) => void;
 
   'achievement:unlock': (p: { id: string; name: string; desc: string; icon: string }) => void;
+
+  'phone:assignment': (p: z.infer<typeof TelAssignmentSchema>) => void;
+  'phone:waiting': (p: { submitted: number; total: number }) => void;
+  'phone:reveal': (p: z.infer<typeof TelRevealSchema>) => void;
 
   error: (p: ErrorPayload) => void;
 }

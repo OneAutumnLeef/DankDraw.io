@@ -15,6 +15,9 @@ export function useSocketBindings() {
   const setCursor = useGame((s) => s.setCursor);
   const removeCursor = useGame((s) => s.removeCursor);
   const setTyping = useGame((s) => s.setTyping);
+  const setTelAssignment = useGame((s) => s.setTelAssignment);
+  const setTelWaiting = useGame((s) => s.setTelWaiting);
+  const setTelReveal = useGame((s) => s.setTelReveal);
   const upsertStrokeStart = useGame((s) => s.upsertStrokeStart);
   const appendToStroke = useGame((s) => s.appendToStroke);
   const finishStroke = useGame((s) => s.finishStroke);
@@ -117,6 +120,17 @@ export function useSocketBindings() {
       sfx.fanfare();
     });
 
+    sock.on('phone:assignment', (a) => {
+      setTelAssignment(a);
+      setTelReveal(null);
+      sfx.whoosh();
+    });
+    sock.on('phone:waiting', (w) => setTelWaiting(w));
+    sock.on('phone:reveal', (r) => {
+      setTelReveal(r);
+      setTelAssignment(null);
+    });
+
     return () => {
       sock.off('connect', sendHello);
       sock.off('room:joined');
@@ -136,6 +150,9 @@ export function useSocketBindings() {
       sock.off('cursor:move');
       sock.off('chat:typing');
       sock.off('achievement:unlock');
+      sock.off('phone:assignment');
+      sock.off('phone:waiting');
+      sock.off('phone:reveal');
     };
   }, [
     profile.name,
@@ -150,6 +167,9 @@ export function useSocketBindings() {
     setCursor,
     removeCursor,
     setTyping,
+    setTelAssignment,
+    setTelWaiting,
+    setTelReveal,
     upsertStrokeStart,
     appendToStroke,
     finishStroke,

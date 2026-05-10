@@ -224,7 +224,7 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
 
       {/* Toolbar */}
       {isDrawer && (
-        <div className="flex flex-wrap items-center justify-center gap-3 rounded-3xl border border-white/10 bg-ink-800/80 p-3 shadow-soft backdrop-blur-xl">
+        <div className="flex flex-wrap items-center justify-center gap-2 rounded-3xl border border-white/10 bg-ink-800/80 p-2 shadow-soft backdrop-blur-xl sm:gap-3 sm:p-3">
           {/* Tools */}
           <div className="flex gap-1">
             {TOOLS.map((t) => (
@@ -233,7 +233,7 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
                 title={`${t.label} (${t.key.toUpperCase()})`}
                 onClick={() => setTool(t.id)}
                 className={clsx(
-                  'h-10 w-10 rounded-xl border text-xl transition active:translate-y-px',
+                  'h-9 w-9 rounded-xl border text-lg transition active:translate-y-px sm:h-10 sm:w-10 sm:text-xl',
                   tool === t.id
                     ? 'border-dank-pink bg-dank-pink/15 shadow-glow'
                     : 'border-white/10 bg-white/5 hover:bg-white/10',
@@ -253,7 +253,7 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
                   if (tool === 'eraser') setTool('pen');
                 }}
                 className={clsx(
-                  'h-8 w-8 rounded-lg border-2 transition',
+                  'h-7 w-7 rounded-lg border-2 transition sm:h-8 sm:w-8',
                   color === c && tool !== 'eraser' ? 'border-white scale-110' : 'border-black/20',
                 )}
                 style={{ backgroundColor: c }}
@@ -267,7 +267,7 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
                 setColor(e.target.value);
                 if (tool === 'eraser') setTool('pen');
               }}
-              className="h-8 w-8 cursor-pointer rounded-lg border-2 border-black/20"
+              className="h-7 w-7 cursor-pointer rounded-lg border-2 border-black/20 sm:h-8 sm:w-8"
               aria-label="custom color"
             />
           </div>
@@ -279,14 +279,14 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
               max={50}
               value={size}
               onChange={(e) => setSize(Number(e.target.value))}
-              className="dank-range h-2 w-32"
+              className="dank-range h-2 w-24 sm:w-32"
               aria-label="brush size"
             />
             <div
-              className="h-8 w-8 rounded-full"
+              className="rounded-full"
               style={{
-                width: Math.min(size, 32),
-                height: Math.min(size, 32),
+                width: Math.min(size, 28),
+                height: Math.min(size, 28),
                 background: tool === 'eraser' ? '#fff' : color,
                 border: '2px solid rgba(255,255,255,0.2)',
               }}
@@ -296,7 +296,7 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
           <div className="flex gap-1">
             <button
               onClick={() => getSocket().emit('stroke:undo')}
-              className="btn-secondary h-10 px-3 text-sm"
+              className="btn-secondary h-9 px-3 text-xs sm:h-10 sm:text-sm"
               title="Undo (Ctrl+Z)"
             >
               ↶ Undo
@@ -305,7 +305,7 @@ export function Canvas({ isDrawer, className }: CanvasProps) {
               onClick={() => {
                 if (confirm('Clear the canvas?')) getSocket().emit('canvas:clear');
               }}
-              className="btn-secondary h-10 px-3 text-sm"
+              className="btn-secondary h-9 px-3 text-xs sm:h-10 sm:text-sm"
             >
               🗑 Clear
             </button>

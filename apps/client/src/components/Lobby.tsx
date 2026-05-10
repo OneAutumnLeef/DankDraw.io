@@ -6,9 +6,10 @@ import { useGame } from '@/store/gameStore';
 
 const MODES: Array<{ id: RoomConfig['mode']; name: string; emoji: string; tagline: string; ready: boolean }> = [
   { id: 'classic', name: 'Classic', emoji: '🎨', tagline: 'pictionary, perfected', ready: true },
+  { id: 'telephone', name: 'Telephone', emoji: '📞', tagline: 'gartic-style chains', ready: true },
   { id: 'speedrun', name: 'Speedrun', emoji: '⚡', tagline: 'short rounds, max chaos', ready: true },
-  { id: 'custom', name: 'Custom Words', emoji: '✍️', tagline: 'your inside jokes', ready: true },
   { id: 'teams', name: 'Teams', emoji: '🤝', tagline: 'red vs blue', ready: true },
+  { id: 'custom', name: 'Custom Words', emoji: '✍️', tagline: 'your inside jokes', ready: true },
 ];
 
 export function Lobby() {
@@ -44,14 +45,14 @@ export function Lobby() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-1 flex-col gap-6 p-4 lg:p-8"
+      className="flex flex-1 flex-col gap-6 p-3 sm:p-4 lg:p-8"
     >
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
           <span className="chip">Room</span>
           <button
             onClick={copyInvite}
-            className="ml-2 font-display text-3xl tracking-[0.4em] text-white hover:text-dank-pink"
+            className="font-display text-2xl tracking-[0.3em] text-white hover:text-dank-pink sm:text-3xl sm:tracking-[0.4em]"
             title="click to copy invite"
           >
             {state.roomCode}
@@ -63,7 +64,7 @@ export function Lobby() {
       </div>
 
       {/* Mode picker */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-5">
         {MODES.map((m) => {
           const selected = config.mode === m.id;
           return (
@@ -76,15 +77,17 @@ export function Lobby() {
                 if (m.id === 'classic') patch.drawTimeSec = 80;
                 update(patch);
               }}
-              className={`group relative overflow-hidden rounded-3xl border p-4 text-left transition ${
+              className={`group relative overflow-hidden rounded-2xl border p-3 text-left transition sm:rounded-3xl sm:p-4 ${
                 selected
                   ? 'border-dank-pink bg-dank-pink/15 shadow-glow'
                   : 'border-white/10 bg-white/5 hover:bg-white/10'
               } ${!m.ready ? 'opacity-50' : ''}`}
             >
-              <div className="text-3xl">{m.emoji}</div>
-              <div className="mt-2 font-display text-lg text-white">{m.name}</div>
-              <div className="text-xs text-white/60">{m.tagline}</div>
+              <div className="text-2xl sm:text-3xl">{m.emoji}</div>
+              <div className="mt-1 font-display text-base text-white sm:mt-2 sm:text-lg">
+                {m.name}
+              </div>
+              <div className="text-[11px] text-white/60 sm:text-xs">{m.tagline}</div>
             </button>
           );
         })}
@@ -149,7 +152,7 @@ export function Lobby() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
         <div className="flex flex-wrap gap-2">
           <Toggle
             label="Hints"
@@ -171,7 +174,7 @@ export function Lobby() {
           />
         </div>
         {isHost ? (
-          <button className="btn-primary px-8 text-lg" onClick={onStart}>
+          <button className="btn-primary w-full px-6 text-base sm:w-auto sm:px-8 sm:text-lg" onClick={onStart}>
             ▶︎ Start Game
           </button>
         ) : (

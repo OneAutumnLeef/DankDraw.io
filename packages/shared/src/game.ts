@@ -18,9 +18,17 @@ export const GAME_LIMITS = {
   maxStrokePoints: 1024,
   /** Max base64-encoded chat image bytes (≈ 200 KB after b64 overhead). */
   maxChatImageChars: 280_000,
+  /** Sketch Telephone limits */
+  telPromptMaxLen: 80,
+  telCaptionMaxLen: 100,
+  telPromptSec: 30,
+  telTurnSec: 70,
+  telRevealPageSec: 4,
+  telMaxStrokes: 300,
+  telMaxStrokePoints: 256,
 } as const;
 
-export const GameModeSchema = z.enum(['classic', 'teams', 'custom', 'speedrun']);
+export const GameModeSchema = z.enum(['classic', 'teams', 'custom', 'speedrun', 'telephone']);
 export type GameMode = z.infer<typeof GameModeSchema>;
 
 export const DifficultySchema = z.enum(['easy', 'medium', 'hard']);
@@ -79,6 +87,10 @@ export const PhaseSchema = z.enum([
   'drawing',
   'roundEnd',
   'gameEnd',
+  // Sketch Telephone phases
+  'telPrompt',
+  'telTurn',
+  'telReveal',
 ]);
 export type Phase = z.infer<typeof PhaseSchema>;
 

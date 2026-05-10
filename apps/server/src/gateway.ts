@@ -17,6 +17,9 @@ import {
   StrokeAppendSchema,
   StrokeEndSchema,
   StrokeStartSchema,
+  SubmitCaptionSchema,
+  SubmitDrawSchema,
+  SubmitPromptSchema,
   TypingSchema,
   UpdateConfigSchema,
   sanitiseText,
@@ -175,6 +178,41 @@ export function attachGateway(io: IO, manager: RoomManager) {
       room.canvasFill(socket.id, parsed.data);
     });
 
+    socket.on('phone:submitPrompt', (raw) => {
+      const parsed = SubmitPromptSchema.safeParse(raw);
+      const room = currentRoom(socket, manager);
+      if (!parsed.success || !room) return;
+      const text = sanitiseText(parsed.data.text, GAME_LIMITS.maxChatLength);
+      if (!text) return;
+      room.telSubmitPrompt(socket.id, text);
+    });
+
+    socket.on('phone:submitDraw', (raw) => {
+      const parsed = SubmitDrawSchema.safeParse(raw);
+      const room = currentRoom(socket, manager);
+      if (!parsed.success || !room) return;
+      room.telSubmitDraw(
+        socket.id,
+        parsed.data.bookId,
+        parsed.data.turnIndex,
+        parsed.data.strokes,
+      );
+    });
+
+    socket.on('phone:submitCaption', (raw) => {
+      const parsed = SubmitCaptionSchema.safeParse(raw);
+      const room = currentRoom(socket, manager);
+      if (!parsed.success || !room) return;
+      const text = sanitiseText(parsed.data.text, GAME_LIMITS.maxChatLength);
+      if (!text) return;
+      room.telSubmitCaption(
+        socket.id,
+        parsed.data.bookId,
+        parsed.data.turnIndex,
+        text,
+      );
+    });
+
     socket.on('cursor:move', (raw) => {
       const parsed = CursorMoveSchema.safeParse(raw);
       if (!parsed.success || !socket.data.roomCode) return;
@@ -305,6 +343,23 @@ function joinSocketToRoom(io: IO, socket: S, room: Room) {
     if (toId === socket.id) socket.emit('chat:message', msg);
   });
 
+  const offTelAssignment = room.on('telAssignment', (toId, assignment) => {
+    if (toId === socket.id) socket.emit('phone:assignment', assignment);
+  });
+  const offTelWaiting = room.on('telWaiting', (submitted, total) =>
+    io.to(room.code).emit('phone:waiting', { submitted, total }),
+  );
+  const offTelReveal = room.on('telReveal', (bi, pi, book, tb, tp, ea) =>
+    io.to(room.code).emit('phone:reveal', {
+      bookIndex: bi,
+      pageIndex: pi,
+      totalBooks: tb,
+      totalPages: tp,
+      book,
+      endsAt: ea,
+    }),
+  );
+
   const offAchievement = room.on('achievement', (toId, achievementId) => {
     if (toId !== socket.id) return;
     const cid = socket.data.clientId;
@@ -333,6 +388,9 @@ function joinSocketToRoom(io: IO, socket: S, room: Room) {
     offReaction();
     offWhisper();
     offAchievement();
+    offTelAssignment();
+    offTelWaiting();
+    offTelReveal();
   };
 }
 

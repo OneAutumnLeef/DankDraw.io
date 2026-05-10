@@ -12,7 +12,7 @@ export function HUD() {
   const remaining = useCountdown(state.phaseEndsAt);
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-3xl border border-white/10 bg-ink-800/80 p-3 px-4 shadow-soft backdrop-blur-xl">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-3xl border border-white/10 bg-ink-800/80 p-2 px-3 shadow-soft backdrop-blur-xl sm:p-3 sm:px-4">
       <div className="flex items-center gap-2 text-xs text-white/60">
         <span className="chip border-dank-pink/30 bg-dank-pink/10 text-dank-pink">
           Round {state.round}/{state.totalRounds}
@@ -27,17 +27,18 @@ export function HUD() {
         )}
       </div>
 
-      <div className="flex flex-1 items-center justify-center">
-        {state.phase === 'drawing' && (
+      <CountdownPill seconds={remaining} />
+
+      {/* Word/hint row — always full-width on mobile, between flex items on desktop. */}
+      {state.phase === 'drawing' && (
+        <div className="order-last flex w-full items-center justify-center sm:order-none sm:w-auto sm:flex-1">
           <WordHint
             isDrawer={isDrawer}
             mask={state.wordMask ?? ''}
             myWord={myWord ?? null}
           />
-        )}
-      </div>
-
-      <CountdownPill seconds={remaining} />
+        </div>
+      )}
     </div>
   );
 }
@@ -55,14 +56,18 @@ function WordHint({
     return (
       <div className="text-center">
         <div className="text-[10px] uppercase tracking-wider text-white/40">your word</div>
-        <div className="font-display text-2xl tracking-wider text-dank-mint">{myWord}</div>
+        <div className="break-words font-display text-xl tracking-wider text-dank-mint sm:text-2xl">
+          {myWord}
+        </div>
       </div>
     );
   }
   return (
     <div className="text-center">
       <div className="text-[10px] uppercase tracking-wider text-white/40">guess the word</div>
-      <div className="font-mono text-2xl tracking-[0.5em] text-white">{mask}</div>
+      <div className="break-words font-mono text-xl tracking-[0.4em] text-white sm:text-2xl sm:tracking-[0.5em]">
+        {mask}
+      </div>
     </div>
   );
 }

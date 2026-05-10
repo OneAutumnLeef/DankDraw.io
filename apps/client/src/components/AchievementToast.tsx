@@ -37,7 +37,7 @@ export function AchievementToastLayer() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+    <div className="pointer-events-none fixed right-3 top-3 z-achievement flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-2 sm:right-6 sm:top-6">
       <AnimatePresence>
         {items.map((u) => (
           <motion.div
@@ -46,7 +46,7 @@ export function AchievementToastLayer() {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 100, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-            className="pointer-events-auto flex w-72 items-center gap-3 rounded-3xl border border-dank-sun/50 bg-gradient-to-br from-dank-sun/15 via-ink-800/95 to-ink-900/95 p-4 shadow-glow backdrop-blur-xl"
+            className="pointer-events-auto flex w-[min(18rem,calc(100vw-1.5rem))] items-center gap-3 rounded-3xl border border-dank-sun/50 bg-gradient-to-br from-dank-sun/15 via-ink-800/95 to-ink-900/95 p-4 shadow-glow backdrop-blur-xl"
           >
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-dank-sun/20 text-2xl shadow-inset">
               {u.icon}

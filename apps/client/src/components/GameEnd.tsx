@@ -37,12 +37,12 @@ export function GameEnd() {
       : null;
 
   return (
-    <div className="flex flex-1 items-center justify-center p-8">
-      <div className="panel max-w-2xl w-full p-8 text-center">
+    <div className="flex flex-1 items-center justify-center p-3 sm:p-8">
+      <div className="panel w-full max-w-2xl p-4 text-center sm:p-8">
         <motion.h2
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="title-chrome font-display text-4xl"
+          className="title-chrome font-display text-3xl sm:text-4xl"
         >
           GG
         </motion.h2>
@@ -82,11 +82,11 @@ export function GameEnd() {
           </motion.div>
         )}
 
-        <div className="mt-6 grid grid-cols-3 items-end gap-3">
+        <div className="mt-6 grid grid-cols-3 items-end gap-2 sm:gap-3">
           {PODIUM_ORDER.map((rank, idx) => {
             const p = top3[rank];
             if (!p) return <div key={idx} />;
-            const heights = ['h-20', 'h-32', 'h-14'];
+            const heights = ['h-16 sm:h-20', 'h-24 sm:h-32', 'h-12 sm:h-14'];
             const bg = ['bg-white/10', 'bg-dank-sun/30', 'bg-white/5'];
             return (
               <motion.div
@@ -96,11 +96,13 @@ export function GameEnd() {
                 transition={{ delay: 0.2 + idx * 0.15 }}
                 className="flex flex-col items-center"
               >
-                <div className="text-5xl">{p.avatar}</div>
-                <div className="mt-1 font-bold">{p.name}</div>
-                <div className="text-sm text-white/60">{p.score} pts</div>
+                <div className="text-4xl sm:text-5xl">{p.avatar}</div>
+                <div className="mt-1 max-w-full truncate text-sm font-bold sm:text-base">
+                  {p.name}
+                </div>
+                <div className="text-xs text-white/60 sm:text-sm">{p.score} pts</div>
                 <div
-                  className={`mt-2 w-full rounded-t-xl ${heights[idx]} ${bg[idx]} flex items-start justify-center pt-2 font-display text-xl`}
+                  className={`mt-2 w-full rounded-t-xl ${heights[idx]} ${bg[idx]} flex items-start justify-center pt-2 font-display text-lg sm:text-xl`}
                 >
                   {rank === 0 ? '🥇' : rank === 1 ? '🥈' : '🥉'}
                 </div>

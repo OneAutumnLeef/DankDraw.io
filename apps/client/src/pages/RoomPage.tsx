@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Canvas } from '@/components/Canvas';
 import { Chat } from '@/components/Chat';
+import { CompactPlayerStrip } from '@/components/CompactPlayerStrip';
 import { GameEnd } from '@/components/GameEnd';
 import { HUD } from '@/components/HUD';
 import { Lobby } from '@/components/Lobby';
@@ -10,6 +11,7 @@ import { PlayerList } from '@/components/PlayerList';
 import { ReactionBar } from '@/components/ReactionBar';
 import { RoundEnd } from '@/components/RoundEnd';
 import { SettingsMenu } from '@/components/SettingsMenu';
+import { TelephoneScreen } from '@/components/TelephoneScreen';
 import { toast } from '@/components/Toasts';
 import { WaitingForWord } from '@/components/WaitingForWord';
 import { WordChoiceModal } from '@/components/WordChoiceModal';
@@ -22,6 +24,10 @@ export function RoomPage() {
   const navigate = useNavigate();
   const state = useGame((s) => s.state);
   const selfId = useGame((s) => s.selfId);
+  const chat = useGame((s) => s.chat);
+  /** On mobile only: a small bottom-sheet drawer for chat. */
+  const [chatOpen, setChatOpen] = useState(false);
+  const [unreadAtClose, setUnreadAtClose] = useState(0);
 
   // If we land on /r/CODE without a state (e.g. direct navigation), join.
   useEffect(() => {
@@ -55,6 +61,11 @@ export function RoomPage() {
     );
   }, [code, state, profile, navigate]);
 
+  // Track unread messages while the mobile chat drawer is closed.
+  useEffect(() => {
+    if (chatOpen) setUnreadAtClose(chat.length);
+  }, [chatOpen, chat.length]);
+
   if (!code) return <Navigate to="/" replace />;
 
   if (!state) {
@@ -67,6 +78,7 @@ export function RoomPage() {
 
   const me = state.players.find((p) => p.id === selfId);
   const isDrawer = !!me?.isDrawing;
+  const unread = Math.max(0, chat.length - unreadAtClose);
 
   const onLeave = () => {
     getSocket().emit('room:leave');
@@ -75,22 +87,20 @@ export function RoomPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex items-center justify-between gap-3 border-b border-white/5 px-4 py-2 backdrop-blur lg:px-6">
-        <div className="flex items-center gap-3">
+    <div className="flex min-h-[100dvh] flex-col">
+      <header className="flex items-center justify-between gap-2 border-b border-white/5 px-3 py-2 backdrop-blur lg:px-6">
+        <div className="flex min-w-0 items-center gap-2">
           <button
             onClick={onLeave}
-            className="font-display text-xl text-white hover:text-dank-pink"
+            className="truncate font-display text-lg text-white hover:text-dank-pink sm:text-xl"
             title="back to home"
           >
             DankDraw<span className="text-dank-mint">.io</span>
           </button>
-          <span className="chip text-[10px]">
-            {state.roomCode}
-          </span>
+          <span className="chip text-[10px]">{state.roomCode}</span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-white/50">
-          <span className="hidden sm:inline">
+        <div className="flex items-center gap-2 text-xs text-white/50">
+          <span className="hidden md:inline">
             {state.players.length} player{state.players.length === 1 ? '' : 's'}
           </span>
           <SettingsMenu />
@@ -100,9 +110,14 @@ export function RoomPage() {
         </div>
       </header>
 
+      {/* Mobile-only: horizontal player strip */}
+      <div className="border-b border-white/5 px-3 py-2 lg:hidden">
+        <CompactPlayerStrip players={state.players} />
+      </div>
+
       <main className="flex flex-1 flex-col gap-3 p-3 lg:flex-row lg:p-4">
-        {/* Left: player list */}
-        <aside className="lg:w-64 lg:shrink-0">
+        {/* Desktop only: vertical player aside */}
+        <aside className="hidden lg:block lg:w-64 lg:shrink-0">
           <div className="panel p-3">
             <div className="mb-2 px-1 text-xs font-bold uppercase tracking-wider text-white/50">
               Players
@@ -112,15 +127,21 @@ export function RoomPage() {
         </aside>
 
         {/* Center: phase-driven main area */}
-        <section className="flex flex-1 flex-col gap-3">
+        <section className="flex min-h-0 flex-1 flex-col gap-3 pb-16 lg:pb-0">
           {state.phase === 'lobby' && <Lobby />}
+          {(state.phase === 'telPrompt' ||
+            state.phase === 'telTurn' ||
+            state.phase === 'telReveal') && <TelephoneScreen />}
           {(state.phase === 'wordChoice' || state.phase === 'drawing') && (
             <>
               <HUD />
               {state.phase === 'wordChoice' && !isDrawer && <WaitingForWord />}
               {(state.phase === 'drawing' || (state.phase === 'wordChoice' && isDrawer)) && (
                 <>
-                  <motion.div layout className="flex flex-1 min-h-[420px]">
+                  <motion.div
+                    layout
+                    className="flex flex-1 min-h-[260px] sm:min-h-[360px] lg:min-h-[420px]"
+                  >
                     <Canvas isDrawer={isDrawer && state.phase === 'drawing'} />
                   </motion.div>
                   {state.phase === 'drawing' && !isDrawer && (
@@ -136,15 +157,64 @@ export function RoomPage() {
           {state.phase === 'gameEnd' && <GameEnd />}
         </section>
 
-        {/* Right: chat */}
-        <aside className="lg:w-80 lg:shrink-0">
-          <div className="panel flex h-[40vh] flex-col overflow-hidden lg:h-full">
+        {/* Desktop chat panel */}
+        <aside className="hidden lg:block lg:w-80 lg:shrink-0">
+          <div className="panel flex h-full flex-col overflow-hidden">
             <Chat />
           </div>
         </aside>
       </main>
 
+      {/* Mobile-only chat drawer pinned to the bottom of the viewport. */}
+      <MobileChatDrawer
+        open={chatOpen}
+        unread={unread}
+        onToggle={() => setChatOpen((v) => !v)}
+      />
+
       <WordChoiceModal />
+    </div>
+  );
+}
+
+function MobileChatDrawer({
+  open,
+  unread,
+  onToggle,
+}: {
+  open: boolean;
+  unread: number;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className={`pb-safe pointer-events-none fixed inset-x-0 bottom-0 z-popover flex flex-col items-stretch lg:hidden`}
+    >
+      {/* Drawer handle */}
+      <button
+        onClick={onToggle}
+        className="pointer-events-auto mx-auto mb-1 flex items-center gap-2 rounded-t-2xl border border-b-0 border-white/15 bg-ink-800/95 px-4 py-1 text-xs font-semibold text-white/80 backdrop-blur-xl shadow-soft"
+        aria-expanded={open}
+      >
+        💬 Chat
+        {!open && unread > 0 && (
+          <span className="rounded-full bg-dank-pink px-2 py-0.5 text-[10px] text-white">
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
+        <span className="text-white/40">{open ? '▾' : '▴'}</span>
+      </button>
+
+      {open && (
+        <motion.div
+          initial={{ y: 32, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 32, opacity: 0 }}
+          className="pointer-events-auto h-[55dvh] border-t border-white/10 bg-ink-900/95 backdrop-blur-xl"
+        >
+          <Chat />
+        </motion.div>
+      )}
     </div>
   );
 }

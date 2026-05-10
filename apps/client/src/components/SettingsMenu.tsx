@@ -53,7 +53,7 @@ export function SettingsMenu() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 500, damping: 36 }}
-            className="panel absolute right-0 top-12 z-30 w-80 p-4"
+            className="panel z-popover absolute right-0 top-12 w-[min(20rem,calc(100vw-1.5rem))] p-4"
           >
             <div className="text-xs font-bold uppercase tracking-wider text-white/60">Theme</div>
             <div className="mt-2 grid grid-cols-3 gap-2">

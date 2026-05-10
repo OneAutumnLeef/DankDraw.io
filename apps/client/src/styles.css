@@ -81,6 +81,22 @@
 }
 
 @layer utilities {
+  /* Stacking scale — single source of truth so overlays never fight.
+     Background: -10
+     App shell:    1
+     Popover (SettingsMenu): 30
+     Modal backdrop + modal:  40
+     Toast (snackbar):        50
+     Achievement toast:       60   */
+  .z-popover { z-index: 30; }
+  .z-modal { z-index: 40; }
+  .z-toast { z-index: 50; }
+  .z-achievement { z-index: 60; }
+
+  /* Respect device safe areas (notch, gesture bar). */
+  .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+  .pt-safe { padding-top: max(env(safe-area-inset-top), 0px); }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

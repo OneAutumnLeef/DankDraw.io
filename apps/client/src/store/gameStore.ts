@@ -4,6 +4,8 @@ import {
   type ChatMessage,
   type PublicGameState,
   type Stroke,
+  type TelAssignment,
+  type TelRevealPayload,
 } from '@dankdraw/shared';
 import { nanoid } from 'nanoid';
 import { create } from 'zustand';
@@ -55,6 +57,9 @@ export interface GameStoreState {
   reactions: { id: string; fromId: string; emoji: string; ts: number }[];
   cursors: Map<string, { x: number; y: number; ts: number }>;
   typing: Set<string>;
+  telAssignment: TelAssignment | null;
+  telWaiting: { submitted: number; total: number } | null;
+  telReveal: TelRevealPayload | null;
   setRoomJoined: (p: {
     selfId: string;
     state: PublicGameState;
@@ -70,6 +75,9 @@ export interface GameStoreState {
   setCursor: (id: string, x: number, y: number) => void;
   removeCursor: (id: string) => void;
   setTyping: (id: string, typing: boolean) => void;
+  setTelAssignment: (a: TelAssignment | null) => void;
+  setTelWaiting: (w: { submitted: number; total: number } | null) => void;
+  setTelReveal: (r: TelRevealPayload | null) => void;
   // Stroke management
   upsertStrokeStart: (s: Stroke) => void;
   appendToStroke: (id: string, points: [number, number, number][]) => void;
@@ -90,6 +98,9 @@ export const useGame = create<GameStoreState>((set) => ({
   reactions: [],
   cursors: new Map(),
   typing: new Set(),
+  telAssignment: null,
+  telWaiting: null,
+  telReveal: null,
 
   setRoomJoined: ({ selfId, state, recentChat, strokes }) =>
     set({
@@ -103,6 +114,9 @@ export const useGame = create<GameStoreState>((set) => ({
       reactions: [],
       cursors: new Map(),
       typing: new Set(),
+      telAssignment: null,
+      telWaiting: null,
+      telReveal: null,
     }),
   setState: (state) => set({ state }),
   pushChat: (m) =>
@@ -138,6 +152,10 @@ export const useGame = create<GameStoreState>((set) => ({
       else next.delete(id);
       return { typing: next };
     }),
+
+  setTelAssignment: (a) => set({ telAssignment: a, telWaiting: null }),
+  setTelWaiting: (w) => set({ telWaiting: w }),
+  setTelReveal: (r) => set({ telReveal: r }),
 
   upsertStrokeStart: (stroke) =>
     set((s) => {
@@ -184,5 +202,8 @@ export const useGame = create<GameStoreState>((set) => ({
       reactions: [],
       cursors: new Map(),
       typing: new Set(),
+      telAssignment: null,
+      telWaiting: null,
+      telReveal: null,
     }),
 }));

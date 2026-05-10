@@ -14,9 +14,12 @@ import {
   type PublicGameState,
   type RoomConfig,
   type Stroke,
+  type TelAssignment,
+  type TelBook,
   type Team,
   type WordEntry,
 } from '@dankdraw/shared';
+import { TelephoneController } from './TelephoneController.js';
 
 export interface RoomEvents {
   state: (state: PublicGameState) => void;
@@ -44,6 +47,16 @@ export interface RoomEvents {
   reaction: (fromId: string, emoji: string) => void;
   whisper: (toId: string, msg: ChatMessage) => void;
   achievement: (toId: string, achievementId: AchievementId) => void;
+  telAssignment: (toId: string, assignment: TelAssignment) => void;
+  telWaiting: (submitted: number, total: number) => void;
+  telReveal: (
+    bookIndex: number,
+    pageIndex: number,
+    book: TelBook,
+    totalBooks: number,
+    totalPages: number,
+    endsAt: number,
+  ) => void;
   closed: () => void;
 }
 
@@ -92,8 +105,13 @@ export class Room {
     reaction: new Set(),
     whisper: new Set(),
     achievement: new Set(),
+    telAssignment: new Set(),
+    telWaiting: new Set(),
+    telReveal: new Set(),
     closed: new Set(),
   };
+
+  private telephone: TelephoneController | null = null;
 
   /** Map socket.id → persistent clientId (from localStorage). */
   clientIds = new Map<string, string>();
@@ -274,7 +292,51 @@ export class Room {
       if (this.config.mode !== 'teams') p.team = null;
     }
     this.recentlyUsed.clear();
+    if (this.config.mode === 'telephone') {
+      this.startTelephone();
+      return;
+    }
     this.advanceToNextRound();
+  }
+
+  // ── Telephone ──
+  private startTelephone() {
+    this.telephone?.cancel();
+    this.telephone = new TelephoneController({
+      players: () => [...this.players.values()].sort((a, b) => a.joinedAt - b.joinedAt),
+      emitState: () => this.broadcastState(),
+      emitAssignment: (toId, assignment) => this.emit('telAssignment', toId, assignment),
+      emitWaiting: (submitted, total) => this.emit('telWaiting', submitted, total),
+      emitReveal: (bi, pi, book, tb, tp, ea) =>
+        this.emit('telReveal', bi, pi, book, tb, tp, ea),
+      setPhase: (phase, endsAt) => {
+        this.phase = phase;
+        this.phaseEndsAt = endsAt;
+        this.broadcastState();
+      },
+      onComplete: () => {
+        this.phase = 'lobby';
+        this.phaseEndsAt = null;
+        this.telephone = null;
+        this.broadcastState();
+      },
+    });
+    this.telephone.start();
+  }
+
+  telSubmitPrompt(playerId: string, text: string) {
+    if (!this.telephone || this.phase !== 'telPrompt') return;
+    this.telephone.submitPrompt(playerId, text);
+  }
+
+  telSubmitDraw(playerId: string, bookId: string, turnIndex: number, strokes: Stroke[]) {
+    if (!this.telephone || this.phase !== 'telTurn') return;
+    this.telephone.submitDraw(playerId, bookId, turnIndex, strokes);
+  }
+
+  telSubmitCaption(playerId: string, bookId: string, turnIndex: number, text: string) {
+    if (!this.telephone || this.phase !== 'telTurn') return;
+    this.telephone.submitCaption(playerId, bookId, turnIndex, text);
   }
 
   private advanceToNextRound(): void {

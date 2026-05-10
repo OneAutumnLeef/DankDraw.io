@@ -7,16 +7,18 @@ export function RoundEnd() {
   const strokes = useGame((s) => s.strokes);
 
   return (
-    <div className="flex flex-1 items-stretch justify-center p-4 lg:p-8">
+    <div className="flex flex-1 items-stretch justify-center p-3 sm:p-4 lg:p-8">
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="panel grid w-full max-w-5xl gap-6 p-6 lg:grid-cols-[2fr_1fr]"
+        className="panel grid w-full max-w-5xl gap-4 p-4 sm:gap-6 sm:p-6 lg:grid-cols-[2fr_1fr]"
       >
         <div className="flex flex-col gap-3">
           <div className="text-center">
             <div className="text-xs uppercase tracking-widest text-white/50">the word was</div>
-            <div className="font-display text-3xl text-dank-mint">{state.wordReveal}</div>
+            <div className="break-words font-display text-2xl text-dank-mint sm:text-3xl">
+              {state.wordReveal}
+            </div>
           </div>
           <ReplayCanvas strokes={strokes} />
         </div>

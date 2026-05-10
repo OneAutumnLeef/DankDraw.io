@@ -28,7 +28,7 @@ export function Toasts() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2">
+    <div className="pointer-events-none z-toast fixed left-1/2 top-4 -translate-x-1/2 flex w-[min(28rem,calc(100vw-1.5rem))] flex-col items-center gap-2 sm:top-auto sm:bottom-6">
       <AnimatePresence>
         {items.map((t) => (
           <motion.div
