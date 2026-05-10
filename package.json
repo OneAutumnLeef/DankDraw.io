@@ -11,11 +11,13 @@
     "dev": "pnpm --parallel --filter \"./apps/*\" run dev",
     "build": "pnpm -r --workspace-concurrency=1 run build",
     "start": "pnpm --filter @dankdraw/server start",
+    "share": "pnpm --filter @dankdraw/client build && concurrently -k -n server,tunnel -c magenta,cyan \"pnpm start\" \"npx --yes localtunnel --port 3000\"",
     "typecheck": "pnpm -r --workspace-concurrency=1 run typecheck",
     "lint": "pnpm -r run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md,css}\""
   },
   "devDependencies": {
+    "concurrently": "^9.0.1",
     "prettier": "^3.3.3",
     "typescript": "^5.6.3"
   }

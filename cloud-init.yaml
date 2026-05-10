@@ -1,0 +1,53 @@
+#cloud-config
+# Drop this into the "Advanced options → Cloud-init" textbox when
+# launching an Oracle Cloud Always Free Ampere A1 VM (Ubuntu 22.04+
+# / Oracle Linux 9). The VM will come up with Docker installed and
+# DankDraw running on port 80.
+#
+# After it boots:
+#  1. In Oracle's networking → security list, add an ingress rule:
+#     Source 0.0.0.0/0, TCP, destination port 80
+#  2. Visit http://<public-ip>/  — that's it.
+#
+# For HTTPS:
+#  1. Point a free DuckDNS subdomain at the public IP
+#  2. Replace `image: dankdraw` with a docker-compose that adds Caddy
+#     in front, or run `caddy reverse-proxy --from your.duckdns.org
+#     --to :3000` on the host
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - docker.io
+  - docker-compose-v2
+  - git
+  - curl
+  - ufw
+
+runcmd:
+  # Open port 80 in the local firewall (Oracle's network firewall is separate)
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw --force enable
+
+  # Enable Docker
+  - systemctl enable --now docker
+  - usermod -aG docker ubuntu || usermod -aG docker opc || true
+
+  # Clone, build, run
+  - mkdir -p /opt/dankdraw
+  - cd /opt/dankdraw && git clone https://github.com/OneAutumnLeef/DankDraw.io.git .
+  - cd /opt/dankdraw && docker build -t dankdraw .
+  - >
+    docker run -d
+    --name dankdraw
+    --restart unless-stopped
+    -p 80:3000
+    -v dankdraw-data:/app/data
+    dankdraw
+
+  # Marker file so you can confirm cloud-init completed
+  - touch /opt/dankdraw/.bootstrap-done
+
+final_message: "DankDraw bootstrap finished. Open port 80 in Oracle's security list, then visit http://$PUBLIC_IP/"

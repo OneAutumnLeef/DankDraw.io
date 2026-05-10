@@ -1,10 +1,10 @@
 # 🎨 DankDraw.io
 
-> Multiplayer pictionary, but extra dank. Originally a 2024 Global Game Jam project — fully renovated in v2.0 with a state-of-the-art stack and a brand-new "Neo-Dank" feel.
+> Multiplayer pictionary, but extra dank. Originally a 2024 Global Game Jam project — fully renovated in v2 with a state-of-the-art stack and a brand-new "Neo-Dank" feel.
 
-![hero](https://img.shields.io/badge/v2.0-Neo--Dank-FF6BD6) ![stack](https://img.shields.io/badge/stack-React%20%2B%20Fastify%20%2B%20Socket.IO-7CC4FF)
+![hero](https://img.shields.io/badge/v2.3-Neo--Dank-FF6BD6) ![stack](https://img.shields.io/badge/stack-React%20%2B%20Fastify%20%2B%20Socket.IO-7CC4FF)
 
-## ✨ Features (v2.0)
+## ✨ Features
 
 - 🏠 **Rooms with shareable codes** — public + private, host configures everything
 - 🎨 **Smooth pressure-sensitive drawing** — pen, marker, eraser, fill bucket; undo, clear, custom colors, mobile/touch/stylus parity
@@ -12,12 +12,16 @@
 - 🧠 **3-word selection** — drawer picks easy / medium / hard, harder words score more
 - 🔡 **Progressive hint reveal** — letters unmask over time
 - 🏆 **Time-weighted scoring** — fast guesses + first-to-guess bonuses; drawer also scores
-- 🎮 **4 modes** — Classic, Speedrun, Custom Words, Teams (coming)
-- 💬 **Sanitized chat** — XSS-proof; spoiler-blocking for the drawer; system messages styled separately
+- 🎮 **5 modes** — Classic, Telephone (Gartic-style chains), Speedrun, Teams (red vs blue), Custom Words
+- 💬 **Sanitized chat with images** — XSS-proof, profanity-masked, spoiler-blocking for the drawer, paperclip image upload, typing indicators
+- 👀 **Live cursor presence** + 🔥 floating emote reactions on the canvas
+- ⏪ **Round replay scrubber** at the scoreboard
+- 🏆 **Persistent leaderboard + 10 achievements** stored in SQLite, top-5 widget on the landing page
 - 🥇 **Animated podium + confetti** at game end
 - 📱 **Fully responsive** — playable on phones in portrait
 - ♿ **Accessibility** — keyboard shortcuts, reduced-motion support, ARIA labels
 - 🎨 **3 themes** baked in: Neo-Dank (default), Light, Goblin
+- 📡 **In-app round-trip indicator** (coloured `RTT` chip in the room header)
 
 ## 🏗️ Architecture
 
@@ -64,41 +68,103 @@ pnpm format
 
 ## ☁️ Deploy
 
-> **Heads-up:** Vercel and other "serverless-only" hosts do **not** work for
-> DankDraw — the Socket.IO server holds room state in memory and needs a real,
-> long-lived Node process with persistent WebSockets. Pick a host that runs a
-> real container (Render, Fly, Railway, your own VPS).
+> **Heads-up:** Vercel, Netlify, Cloudflare Workers, Deno Deploy and other
+> "serverless-only" hosts do **not** work for DankDraw — the Socket.IO server
+> holds room state in memory and needs a real, long-lived Node process with
+> persistent WebSockets. Pick a host that runs a real container.
+
+### TL;DR — pick by your situation
+
+| Goal | Best option |
+|---|---|
+| Play with friends *right now*, no signup, lowest latency | **`pnpm share`** (Cloudflare Tunnel / localtunnel — see below) |
+| Free forever, low latency in India | **Oracle Cloud Always Free** (Mumbai region) |
+| Cheap-but-not-free, painless deploy | **Fly.io** (~$3/mo for always-on) or **Render Starter** ($7/mo) |
+| Free, accept the latency, no card | **Render free tier** (Oregon — works but laggy from Asia) |
+| You already have a beefy home PC | **Cloudflare Tunnel** + run `pnpm start` locally |
+
+### Quick share via tunnel — `pnpm share`
+
+The fastest path to a public URL with zero cloud signup. Runs the production
+build on your machine and exposes it via a free tunnel. Your PC has to stay
+on, but latency is fantastic for nearby players and there's no card or quota.
+
+```bash
+pnpm install      # one-time, if you haven't already
+pnpm share        # builds, starts, and prints a public https URL
+```
+
+That's it — share the printed URL with friends. Internally it uses
+[localtunnel](https://github.com/localtunnel/localtunnel) (free, no signup).
+Press Ctrl+C to stop.
+
+**Other tunnel options** (all free, all support WebSockets):
+
+| Tool | Command | Persistent URL? | Auth needed? |
+|---|---|---|---|
+| **Cloudflare Tunnel** | `cloudflared tunnel --url http://localhost:3000` | random by default; named tunnels are free | no |
+| **localtunnel** | `npx localtunnel --port 3000 --subdomain dankdraw` | requested subdomain if available | no |
+| **Tailscale Funnel** | `tailscale funnel 3000` | yes (your-machine.ts.net) | Tailscale account (free for 100 devices) |
+| **playit.gg** | install agent, expose port 3000 | yes (free subdomain) | playit account |
+| **Serveo** (SSH) | `ssh -R 80:localhost:3000 serveo.net` | random | no |
+
+### Container hosts (managed)
+
+| Host | Free tier? | Closest region (free) | RTT from Mumbai | Card to sign up? |
+|---|---|---|---|---|
+| **Render** | yes, sleeps after 15 min | Oregon only | ~270 ms | no |
+| **Fly.io** | yes (small allowances) | any (Mumbai available) | ~10-30 ms (bom) | **yes** |
+| **Koyeb** | yes, 1 service, sleeps | Frankfurt | ~110 ms | yes (verification) |
+| **Northflank** | yes, 1 workload | Frankfurt or Iowa | ~110 / 220 ms | yes (verification) |
+| **Zeabur** | yes, with caveats | Tokyo / Singapore | ~80-110 ms | phone verification |
+| **Railway** | $5 trial credit | global | varies | yes |
+| **Glitch** | yes, sleeps after 5 min | US | ~300 ms | no |
+
+### VPS / VM free tiers (forever-free or 12-month)
+
+| Host | Free tier | Mumbai region? | Card? | Notes |
+|---|---|---|---|---|
+| **Oracle Cloud** | ⭐ **Always Free** (perpetual) | ✅ `ap-mumbai-1` | yes (verification only) | 4-core ARM Ampere + 24 GB RAM. Best free option for low-latency in India. Setup: ~30 min. |
+| **Google Cloud** | e2-micro Always Free | ❌ us-west1 / -central1 / -east1 only | yes (verification) | 1 GB / 0.25 vCPU. Works but no Asian region on free. |
+| **AWS** | t2.micro / t3.micro 12 months | ✅ `ap-south-1` | yes | Goes paid after 12 months. |
+| **Azure** | B1S 12 months | ✅ Central India | yes | Same — 12 months only. |
+
+**Oracle Cloud Always Free quickstart** (the recommended forever-free path
+if you're in India):
+
+```bash
+# After you've SSH'd into your fresh Mumbai VM:
+sudo apt-get update && sudo apt-get install -y docker.io git
+sudo systemctl enable --now docker
+git clone https://github.com/OneAutumnLeef/DankDraw.io.git
+cd DankDraw.io
+sudo docker build -t dankdraw .
+sudo docker run -d --restart unless-stopped \
+  -p 80:3000 -v dankdraw-data:/app/data --name dankdraw dankdraw
+```
+
+Open Oracle's "ingress" rule for port 80 and visit the public IP. For HTTPS,
+point a free [DuckDNS](https://duckdns.org) subdomain at it and put
+[Caddy](https://caddyserver.com/) in front.
+
+There's a pre-baked `cloud-init.yaml` in the repo — paste it during VM
+creation and the box comes up with the container already running.
 
 ### Render.com (no credit card required)
 
-A `render.yaml` blueprint is checked in. Steps:
+`render.yaml` is checked in. Push to GitHub → Render → **New > Blueprint** →
+pick the repo. Render builds the Dockerfile and gives you a `*.onrender.com`
+URL. Free tier sleeps after 15 min idle (~30 s wake) and is region-locked to
+Oregon. The in-room header has a coloured `RTT` chip — if it shows red,
+you're feeling the Pacific cable, not a code bug. Move closer (above) for
+real-time drawing.
 
-1. Push the repo to GitHub (already there if you cloned this).
-2. Go to https://render.com → **New** → **Blueprint** → connect the repo.
-3. Render reads `render.yaml`, provisions a free web service, builds the
-   Dockerfile, and gives you a URL like `https://dankdraw.onrender.com`.
+### Fly.io (~$3/mo for always-on, or stop the machine to pay nothing)
 
-Free-tier caveats:
-- **Sleeps after ~15 min idle.** First reconnect takes ~30 s to wake.
-  Upgrade to Starter ($7/mo) to keep it always-on.
-- **Region locked to Oregon (us-west) on free tier.** If your players
-  are far from there (e.g. India ↔ Oregon ≈ 270 ms one-way), drawing
-  will visibly lag for peers even though your local view feels fine.
-  The in-room header has a coloured `RTT` chip that shows the
-  round-trip — anything above ~200 ms is going to feel sluggish during
-  live drawing.
-- For a closer region: Render Singapore / Frankfurt are paid only;
-  Fly.io (next section) has free Mumbai / Tokyo / etc. if you add a
-  card.
-
-Render's proxy forwards WebSocket upgrades correctly out of the box.
-
-### Fly.io
-
-A `Dockerfile` + `fly.toml` are checked in. **Note:** Fly removed their
-no-card-required free tier in late 2024 — you'll need to add a payment
-method, but you won't actually be charged unless you exceed the free
-allowances (which one small app comfortably stays under).
+`Dockerfile` + `fly.toml` are checked in. Fly dropped their no-card free
+tier in late 2024, so you'll need to add a payment method during signup —
+but with `auto_stop_machines = "stop"` the machine sleeps when idle and
+charges for very little.
 
 ```bash
 fly apps create <unique-name> --org personal
@@ -107,26 +173,21 @@ fly deploy
 ```
 
 (`fly launch --copy-config` has a CLI quirk where it ignores the region;
-`fly apps create` + `fly deploy` is the reliable path.)
+`fly apps create` + `fly deploy` is the reliable path.) Already configured
+for `bom` (Mumbai) — change `primary_region` in `fly.toml` if you want
+elsewhere.
 
-The config:
-- Sleeps the machine to zero when idle (free-tier friendly)
-- Health-checks `/api/health` every 30 s
-- Caps each machine at ~250 concurrent connections so Socket.IO sticky-session
-  problems never come up — one room = one machine
+To scale beyond one machine: `fly scale count 2 --max-per-region 2` — at
+that point you'd want the Socket.IO Redis adapter so rooms aren't pinned
+to a single VM.
 
-To scale up later: `fly scale memory 512` / `fly scale count 2 --max-per-region 2`
-(beyond one machine you'd want to add the Socket.IO Redis adapter).
-
-### Plain Docker
+### Plain Docker (anywhere)
 ```bash
 docker build -t dankdraw .
-docker run -p 3000:3000 dankdraw
+docker run -p 3000:3000 -v dankdraw-data:/app/data dankdraw
 ```
-
-### Render / Railway / VPS
-Anything that runs the Dockerfile works. Expose port 3000, point traffic at it,
-make sure the proxy forwards WebSocket upgrades.
+Works on any VPS or self-hosted box. Mount `/app/data` to persist the
+SQLite leaderboard + achievements across restarts.
 
 ## 🎮 How to play
 
@@ -152,9 +213,10 @@ make sure the proxy forwards WebSocket upgrades.
 
 - [x] **Phase 0** — monorepo + foundation
 - [x] **Phase 1** — fully playable end-to-end game
-- [ ] **Phase 2** — cursor presence, emote reactions, sticker drop, replay scrubber, profanity filter, sound/music settings
-- [ ] **Phase 3** — Teams mode, Sketch Telephone (Gartic-style), Daily Doodle + persistent leaderboard, achievements
-- [ ] **Phase 4** — Spectator mode, AI guess-bot, Discord OAuth, replay sharing, seasonal themes
+- [x] **Phase 2** — cursor presence, emote reactions, image-in-chat, replay scrubber, profanity filter, sound/music settings
+- [x] **Phase 3** — Teams mode, persistent leaderboard, 10 achievements, lifetime stats
+- [x] **Phase 4** — Sketch Telephone (Gartic-style chains)
+- [ ] **Phase 5** — Daily Doodle, spectator mode, AI guess-bot, Discord OAuth, replay sharing, seasonal themes
 
 ## 👥 Original team (GGJ 2024)
 
